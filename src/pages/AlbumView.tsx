@@ -24,7 +24,12 @@ interface DayEntry {
   location_name: string | null;
   latitude: number | null;
   longitude: number | null;
+  cover_photo_id: string | null;
   photo_count: number;
+  cover_photo?: {
+    thumbnail_path: string;
+    file_path: string;
+  };
 }
 
 export default function AlbumView() {
@@ -55,12 +60,13 @@ export default function AlbumView() {
       if (albumError) throw albumError;
       setAlbum(albumData);
 
-      // Fetch day entries (simplified for demo)
+      // Fetch day entries with cover photo details
       const { data: dayData, error: dayError } = await supabase
         .from('day_entries')
         .select(`
           *,
-          photos(count)
+          photos!inner(count),
+          cover_photo:photos!cover_photo_id(thumbnail_path, file_path)
         `)
         .eq('album_id', albumId)
         .order('date');
@@ -69,7 +75,8 @@ export default function AlbumView() {
       
       const dayEntriesWithCounts = (dayData || []).map(day => ({
         ...day,
-        photo_count: day.photos?.[0]?.count || 0
+        photo_count: day.photos?.[0]?.count || 0,
+        cover_photo: day.cover_photo
       }));
       
       setDayEntries(dayEntriesWithCounts);
@@ -157,31 +164,48 @@ export default function AlbumView() {
                   Ajouter des photos
                 </Button>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {dayEntries.map((day) => (
-                  <Card 
-                    key={day.id}
-                    className={`cursor-pointer transition-all hover:shadow-medium ${
-                      selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
-                    }`}
-                    onClick={() => setSelectedDayId(day.id)}
-                  >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">
-                        {day.title || day.location_name || 'Sans titre'}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground mb-1">{day.date}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+             ) : (
+               <div className="space-y-3">
+                 {dayEntries.map((day) => (
+                   <Card 
+                     key={day.id}
+                     className={`cursor-pointer transition-all hover:shadow-medium ${
+                       selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
+                     }`}
+                     onClick={() => setSelectedDayId(day.id)}
+                   >
+                     <CardContent className="p-3">
+                       <div className="flex gap-3">
+                          {/* Vignette */}
+                          {day.cover_photo?.thumbnail_path && (
+                            <div className="w-16 h-16 flex-shrink-0">
+                              <img
+                                src={supabase.storage.from('thumbnails').getPublicUrl(day.cover_photo.thumbnail_path).data.publicUrl}
+                                alt="Vignette du jour"
+                                className="w-full h-full object-cover rounded-md bg-muted"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none';
+                                }}
+                              />
+                            </div>
+                          )}
+                         
+                         {/* Contenu texte */}
+                         <div className="flex-1 min-w-0">
+                           <h4 className="font-medium text-sm mb-1 truncate">
+                             {day.title || day.location_name || 'Sans titre'}
+                           </h4>
+                           <p className="text-xs text-muted-foreground mb-1">{day.date}</p>
+                           <p className="text-xs text-muted-foreground">
+                             {day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}
+                           </p>
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 ))}
+               </div>
+             )}
           </div>
         </div>
 

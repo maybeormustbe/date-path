@@ -29,6 +29,7 @@ interface DayEntry {
   cover_photo?: {
     thumbnail_path: string;
     file_path: string;
+    title: string;
   };
 }
 
@@ -66,7 +67,7 @@ export default function AlbumView() {
         .select(`
           *,
           photos!inner(count),
-          cover_photo:photos!cover_photo_id(thumbnail_path, file_path)
+          cover_photo:photos!cover_photo_id(thumbnail_path, file_path, title)
         `)
         .eq('album_id', albumId)
         .order('date');
@@ -95,7 +96,7 @@ export default function AlbumView() {
       id: day.id,
       latitude: day.latitude!,
       longitude: day.longitude!,
-      title: day.title || day.location_name || 'Sans titre',
+      title: day.cover_photo?.title || day.title || day.location_name || 'Sans titre',
       date: day.date,
       photoCount: day.photo_count,
       selected: day.id === selectedDayId

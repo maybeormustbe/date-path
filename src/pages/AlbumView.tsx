@@ -96,11 +96,11 @@ export default function AlbumView() {
 
   const mapLocations = dayEntries
     .filter(day => day.latitude && day.longitude)
-    .map(day => ({
+    .map((day, index) => ({
       id: day.id,
       latitude: day.latitude!,
       longitude: day.longitude!,
-      title: day.cover_photo?.title || day.title || day.location_name || 'Sans titre',
+      title: `Jour ${dayEntries.findIndex(d => d.id === day.id) + 1}`,
       date: day.date,
       photoCount: day.photo_count,
       selected: day.id === selectedDayId

@@ -61,23 +61,27 @@ export default function AlbumView() {
       if (albumError) throw albumError;
       setAlbum(albumData);
 
-      // Fetch day entries with cover photo details
-      const { data: dayData, error: dayError } = await supabase
-        .from('day_entries')
-        .select(`
-          *,
-          photos!inner(count),
-          cover_photo:photos!cover_photo_id(thumbnail_path, file_path, title)
-        `)
-        .eq('album_id', albumId)
-        .order('date');
+      // Fetch day entries with cover photo details and photo counts using RPC
+      const { data: dayData, error: dayError } = await supabase.rpc('get_day_entries_with_photo_count', {
+        album_id: albumId
+      });
 
       if (dayError && dayError.code !== 'PGRST116') throw dayError;
       
-      const dayEntriesWithCounts = (dayData || []).map(day => ({
-        ...day,
-        photo_count: day.photos?.[0]?.count || 0,
-        cover_photo: day.cover_photo
+      const dayEntriesWithCounts = (dayData || []).map((day: any) => ({
+        id: day.id,
+        date: day.date,
+        title: day.title,
+        location_name: day.location_name,
+        latitude: day.latitude,
+        longitude: day.longitude,
+        cover_photo_id: day.cover_photo_id,
+        photo_count: day.photo_count || 0,
+        cover_photo: day.cover_photo_thumbnail_path ? {
+          thumbnail_path: day.cover_photo_thumbnail_path,
+          file_path: day.cover_photo_file_path,
+          title: day.cover_photo_title
+        } : null
       }));
       
       setDayEntries(dayEntriesWithCounts);

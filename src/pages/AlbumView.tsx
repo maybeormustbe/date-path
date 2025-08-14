@@ -100,7 +100,7 @@ export default function AlbumView() {
       id: day.id,
       latitude: day.latitude!,
       longitude: day.longitude!,
-      title: day.cover_photo?.title || `Jour ${dayEntries.findIndex(d => d.id === day.id) + 1}`,
+      title: `Jour ${dayEntries.findIndex(d => d.id === day.id) + 1}`,
       date: day.date,
       photoCount: day.photo_count,
       selected: day.id === selectedDayId

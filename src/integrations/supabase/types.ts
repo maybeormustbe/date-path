@@ -14,7 +14,161 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      albums: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          month: number
+          title: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          month: number
+          title: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          month?: number
+          title?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      day_entries: {
+        Row: {
+          album_id: string
+          cover_photo_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          cover_photo_id?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          cover_photo_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "day_entries_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "day_entries_cover_photo_id_fkey"
+            columns: ["cover_photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      photos: {
+        Row: {
+          album_id: string
+          created_at: string
+          file_path: string
+          file_size: number | null
+          filename: string
+          id: string
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          mime_type: string | null
+          taken_at: string | null
+          thumbnail_path: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          album_id: string
+          created_at?: string
+          file_path: string
+          file_size?: number | null
+          filename: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          mime_type?: string | null
+          taken_at?: string | null
+          thumbnail_path?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          album_id?: string
+          created_at?: string
+          file_path?: string
+          file_size?: number | null
+          filename?: string
+          id?: string
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          mime_type?: string | null
+          taken_at?: string | null
+          thumbnail_path?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "albums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

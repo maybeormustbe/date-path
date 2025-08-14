@@ -171,7 +171,7 @@ export default function AlbumView() {
               </div>
              ) : (
                <div className="space-y-3">
-                 {dayEntries.map((day) => (
+                 {dayEntries.map((day, index) => (
                    <Card 
                      key={day.id}
                      className={`cursor-pointer transition-all hover:shadow-medium ${
@@ -197,13 +197,14 @@ export default function AlbumView() {
                          
                          {/* Contenu texte */}
                          <div className="flex-1 min-w-0">
-                           <h4 className="font-medium text-sm mb-1 truncate">
-                             {day.title || day.location_name || 'Sans titre'}
+                           <h4 className="font-medium text-sm mb-1">
+                             Jour {index + 1}
                            </h4>
-                           <p className="text-xs text-muted-foreground mb-1">{day.date}</p>
-                           <p className="text-xs text-muted-foreground">
-                             {day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}
-                           </p>
+                           <div className="text-xs text-muted-foreground space-y-0.5">
+                             <p>{day.date}</p>
+                             {day.location_name && <p>{day.location_name}</p>}
+                             <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
+                           </div>
                          </div>
                        </div>
                      </CardContent>

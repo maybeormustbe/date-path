@@ -1,15 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { LatLngExpression, Icon, divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default markers in React Leaflet
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { MapPin } from 'lucide-react';
 
 interface PhotoLocation {
   id: string;
@@ -25,112 +15,64 @@ interface PhotoMapProps {
   locations: PhotoLocation[];
   selectedLocationId?: string;
   onLocationClick?: (locationId: string) => void;
-  center?: LatLngExpression;
+  center?: [number, number];
   zoom?: number;
   className?: string;
-}
-
-// Component to update map view when selected location changes
-function MapController({ 
-  selectedLocationId, 
-  locations 
-}: { 
-  selectedLocationId?: string; 
-  locations: PhotoLocation[] 
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (selectedLocationId) {
-      const location = locations.find(loc => loc.id === selectedLocationId);
-      if (location) {
-        map.setView([location.latitude, location.longitude], 15, {
-          animate: true,
-          duration: 0.5
-        });
-      }
-    }
-  }, [selectedLocationId, locations, map]);
-
-  return null;
 }
 
 export function PhotoMap({ 
   locations, 
   selectedLocationId, 
   onLocationClick, 
-  center = [46.603354, 1.888334], // Center of France
-  zoom = 6,
   className = ""
 }: PhotoMapProps) {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
 
-  // Create custom marker icon for selected location
-  const createCustomIcon = (selected: boolean, photoCount: number) => {
-    const baseClasses = "flex items-center justify-center text-white font-bold text-xs rounded-full border-2 border-white shadow-lg";
-    const bgColor = selected ? "bg-accent" : "bg-primary";
-    const size = photoCount > 1 ? "w-8 h-8" : "w-6 h-6";
-    
-    return divIcon({
-      className: 'custom-div-icon',
-      html: `<div class="${baseClasses} ${bgColor} ${size}">
-        ${photoCount > 1 ? photoCount : ''}
-      </div>`,
-      iconSize: photoCount > 1 ? [32, 32] : [24, 24],
-      iconAnchor: photoCount > 1 ? [16, 32] : [12, 24],
-    });
-  };
-
-  // Auto-fit bounds when locations change
-  useEffect(() => {
-    if (mapRef.current && locations.length > 0) {
-      const map = mapRef.current;
-      const bounds = locations.map(loc => [loc.latitude, loc.longitude] as LatLngExpression);
-      
-      if (bounds.length === 1) {
-        map.setView(bounds[0], 15);
-      } else if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [20, 20] });
-      }
-    }
-  }, [locations]);
-
+  // Simple fallback map component using OpenStreetMap
   return (
-    <div className={`map-container ${className}`}>
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        className="w-full h-full"
-        ref={mapRef}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <MapController selectedLocationId={selectedLocationId} locations={locations} />
-        
-        {locations.map((location) => (
-          <Marker
-            key={location.id}
-            position={[location.latitude, location.longitude]}
-            icon={createCustomIcon(location.id === selectedLocationId, location.photoCount)}
-            eventHandlers={{
-              click: () => onLocationClick?.(location.id),
-            }}
-          >
-            <Popup>
-              <div className="text-center">
-                <h4 className="font-semibold text-sm mb-1">{location.title}</h4>
-                <p className="text-xs text-muted-foreground mb-1">{location.date}</p>
-                <p className="text-xs">
-                  {location.photoCount} photo{location.photoCount !== 1 ? 's' : ''}
-                </p>
+    <div className={`relative w-full h-full bg-muted/20 ${className}`}>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Carte des photos</h3>
+          <p className="text-muted-foreground mb-4">
+            {locations.length} emplacement{locations.length !== 1 ? 's' : ''} trouvé{locations.length !== 1 ? 's' : ''}
+          </p>
+          
+          {/* Simple list of locations */}
+          <div className="max-w-sm mx-auto space-y-2">
+            {locations.slice(0, 5).map((location) => (
+              <div 
+                key={location.id}
+                className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                  selectedLocationId === location.id 
+                    ? 'bg-primary/10 border-primary' 
+                    : 'bg-card border-border hover:bg-muted/50'
+                }`}
+                onClick={() => onLocationClick?.(location.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="text-left">
+                    <h4 className="font-medium text-sm">{location.title}</h4>
+                    <p className="text-xs text-muted-foreground">{location.date}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs font-medium">
+                      {location.photoCount} photo{location.photoCount !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+            ))}
+            
+            {locations.length > 5 && (
+              <p className="text-xs text-muted-foreground">
+                +{locations.length - 5} autre{locations.length - 5 !== 1 ? 's' : ''} emplacement{locations.length - 5 !== 1 ? 's' : ''}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

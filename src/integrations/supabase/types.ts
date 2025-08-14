@@ -174,7 +174,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_day_entries_with_photo_count: {
+        Args: { album_id: string }
+        Returns: {
+          cover_photo_file_path: string
+          cover_photo_id: string
+          cover_photo_thumbnail_path: string
+          cover_photo_title: string
+          date: string
+          id: string
+          latitude: number
+          location_name: string
+          longitude: number
+          photo_count: number
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

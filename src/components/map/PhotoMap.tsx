@@ -113,7 +113,6 @@ export function PhotoMap({
                 text-overflow: ellipsis;
               ">
                 ${location.title}
-                ${location.photoCount > 1 ? ` (${location.photoCount})` : ''}
                 <div style="
                   position: absolute;
                   bottom: -6px;

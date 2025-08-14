@@ -55,68 +55,87 @@ export function PhotoMap({
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(map);
 
-      // Add markers
-      locations.forEach((location) => {
-        const isSelected = location.id === selectedLocationId;
+      // Wait for map to be ready before adding markers and fitting bounds
+      map.whenReady(() => {
+        // Add markers
+        const markers: any[] = [];
         
-        // Create custom marker
-        const markerIcon = L.divIcon({
-          className: 'custom-div-icon',
-          html: `<div style="
-            width: ${location.photoCount > 1 ? '32px' : '24px'}; 
-            height: ${location.photoCount > 1 ? '32px' : '24px'}; 
-            background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
-            border: 2px solid white; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-weight: bold; 
-            font-size: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-          ">
-            ${location.photoCount > 1 ? location.photoCount : ''}
-          </div>`,
-          iconSize: location.photoCount > 1 ? [32, 32] : [24, 24],
-          iconAnchor: location.photoCount > 1 ? [16, 32] : [12, 24],
+        locations.forEach((location) => {
+          const isSelected = location.id === selectedLocationId;
+          
+          // Create custom marker
+          const markerIcon = L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="
+              width: ${location.photoCount > 1 ? '32px' : '24px'}; 
+              height: ${location.photoCount > 1 ? '32px' : '24px'}; 
+              background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
+              border: 2px solid white; 
+              border-radius: 50%; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              color: white; 
+              font-weight: bold; 
+              font-size: 12px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            ">
+              ${location.photoCount > 1 ? location.photoCount : ''}
+            </div>`,
+            iconSize: location.photoCount > 1 ? [32, 32] : [24, 24],
+            iconAnchor: location.photoCount > 1 ? [16, 32] : [12, 24],
+          });
+
+          const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
+            .addTo(map);
+
+          markers.push(marker);
+
+          // Add popup
+          marker.bindPopup(`
+            <div style="text-align: center;">
+              <h4 style="font-weight: 600; margin-bottom: 4px;">${location.title}</h4>
+              <p style="color: #666; font-size: 12px; margin-bottom: 4px;">${location.date}</p>
+              <p style="font-size: 12px;">${location.photoCount} photo${location.photoCount !== 1 ? 's' : ''}</p>
+            </div>
+          `);
+
+          // Add click handler
+          marker.on('click', () => {
+            onLocationClick?.(location.id);
+          });
         });
 
-        const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
-          .addTo(map);
+        // Fit bounds if we have locations - wait a bit to ensure everything is ready
+        if (locations.length > 0 && markers.length > 0) {
+          setTimeout(() => {
+            try {
+              const group = L.featureGroup(markers);
+              if (group.getBounds().isValid()) {
+                map.fitBounds(group.getBounds().pad(0.1));
+              }
+            } catch (error) {
+              console.warn('Could not fit bounds:', error);
+            }
+          }, 100);
+        }
 
-        // Add popup
-        marker.bindPopup(`
-          <div style="text-align: center;">
-            <h4 style="font-weight: 600; margin-bottom: 4px;">${location.title}</h4>
-            <p style="color: #666; font-size: 12px; margin-bottom: 4px;">${location.date}</p>
-            <p style="font-size: 12px;">${location.photoCount} photo${location.photoCount !== 1 ? 's' : ''}</p>
-          </div>
-        `);
-
-        // Add click handler
-        marker.on('click', () => {
-          onLocationClick?.(location.id);
-        });
+        // Focus on selected location
+        if (selectedLocationId) {
+          const selectedLocation = locations.find(loc => loc.id === selectedLocationId);
+          if (selectedLocation) {
+            setTimeout(() => {
+              try {
+                map.setView([selectedLocation.latitude, selectedLocation.longitude], 15);
+              } catch (error) {
+                console.warn('Could not set view:', error);
+              }
+            }, 200);
+          }
+        }
       });
 
-      // Fit bounds if we have locations
-      if (locations.length > 0) {
-        const group = L.featureGroup(
-          locations.map(loc => L.marker([loc.latitude, loc.longitude]))
-        );
-        map.fitBounds(group.getBounds().pad(0.1));
-      }
-
       leafletMapRef.current = map;
-
-      // Focus on selected location
-      if (selectedLocationId) {
-        const selectedLocation = locations.find(loc => loc.id === selectedLocationId);
-        if (selectedLocation) {
-          map.setView([selectedLocation.latitude, selectedLocation.longitude], 15);
-        }
-      }
     }).catch((error) => {
       console.error('Failed to load Leaflet:', error);
     });

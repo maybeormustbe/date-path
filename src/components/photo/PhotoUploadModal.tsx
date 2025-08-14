@@ -167,7 +167,7 @@ export function PhotoUploadModal({
         if (thumbnailError) console.warn('Erreur thumbnail:', thumbnailError);
 
         // Save to database
-        const { error: dbError } = await supabase
+        const { data: photoData, error: dbError } = await supabase
           .from('photos')
           .insert({
             album_id: albumId,
@@ -182,9 +182,40 @@ export function PhotoUploadModal({
             file_size: photoFile.file.size,
             mime_type: photoFile.file.type,
             title: photoFile.metadata?.locationName || photoFile.file.name.replace(/\.[^/.]+$/, "")
-          });
+          })
+          .select()
+          .single();
 
         if (dbError) throw dbError;
+
+        // Create or update day entry for this photo
+        if (photoFile.metadata?.date) {
+          const photoDate = photoFile.metadata.date.toISOString().split('T')[0]; // YYYY-MM-DD format
+          
+          // Check if day entry already exists
+          const { data: existingDay } = await supabase
+            .from('day_entries')
+            .select('id')
+            .eq('album_id', albumId)
+            .eq('date', photoDate)
+            .single();
+
+          if (!existingDay) {
+            // Create new day entry
+            await supabase
+              .from('day_entries')
+              .insert({
+                album_id: albumId,
+                user_id: user.id,
+                date: photoDate,
+                title: photoFile.metadata.locationName || `Photos du ${new Date(photoDate).toLocaleDateString('fr-FR')}`,
+                latitude: photoFile.metadata.latitude,
+                longitude: photoFile.metadata.longitude,
+                location_name: photoFile.metadata.locationName,
+                cover_photo_id: photoData.id
+              });
+          }
+        }
 
         // Update progress
         const progress = ((index + 1) / files.length) * 100;

@@ -93,35 +93,45 @@ export function PhotoMap({
           locations.forEach((location) => {
             const isSelected = location.id === selectedLocationId;
             
-            // Simple colored marker
-            const marker = L.circleMarker([location.latitude, location.longitude], {
-              radius: location.photoCount > 1 ? 12 : 8,
-              fillColor: isSelected ? '#ef4444' : '#3b82f6',
-              color: '#ffffff',
-              weight: 2,
-              opacity: 1,
-              fillOpacity: 0.8
-            }).addTo(map);
+            // Create tag-like marker with title
+            const markerIcon = L.divIcon({
+              className: 'custom-tag-marker',
+              html: `<div style="
+                background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
+                color: white;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+                white-space: nowrap;
+                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                border: 2px solid white;
+                position: relative;
+                text-align: center;
+                max-width: 120px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              ">
+                ${location.title}
+                ${location.photoCount > 1 ? ` (${location.photoCount})` : ''}
+                <div style="
+                  position: absolute;
+                  bottom: -6px;
+                  left: 50%;
+                  transform: translateX(-50%);
+                  width: 0;
+                  height: 0;
+                  border-left: 6px solid transparent;
+                  border-right: 6px solid transparent;
+                  border-top: 6px solid ${isSelected ? '#ef4444' : '#3b82f6'};
+                "></div>
+              </div>`,
+              iconSize: [120, 28],
+              iconAnchor: [60, 34], // Adjusted for the pointer
+            });
 
-            // Add number if multiple photos
-            if (location.photoCount > 1) {
-              const numberMarker = L.marker([location.latitude, location.longitude], {
-                icon: L.divIcon({
-                  className: 'photo-count-marker',
-                  html: `<div style="
-                    color: white; 
-                    font-weight: bold; 
-                    font-size: 11px; 
-                    text-align: center; 
-                    line-height: 20px;
-                    pointer-events: none;
-                  ">${location.photoCount}</div>`,
-                  iconSize: [20, 20],
-                  iconAnchor: [10, 10]
-                })
-              }).addTo(map);
-              markersRef.current.push(numberMarker);
-            }
+            const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
+              .addTo(map);
 
             markersRef.current.push(marker);
 

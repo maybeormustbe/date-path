@@ -1,15 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import { LatLngExpression, Icon, divIcon } from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix for default markers in React Leaflet
-delete (Icon.Default.prototype as any)._getIconUrl;
-Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+import { MapPin } from 'lucide-react';
 
 interface PhotoLocation {
   id: string;
@@ -25,81 +15,129 @@ interface PhotoMapProps {
   locations: PhotoLocation[];
   selectedLocationId?: string;
   onLocationClick?: (locationId: string) => void;
-  center?: LatLngExpression;
+  center?: [number, number];
   zoom?: number;
   className?: string;
-}
-
-// Component to update map view when selected location changes
-function MapController({ 
-  selectedLocationId, 
-  locations 
-}: { 
-  selectedLocationId?: string; 
-  locations: PhotoLocation[] 
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (selectedLocationId) {
-      const location = locations.find(loc => loc.id === selectedLocationId);
-      if (location) {
-        map.setView([location.latitude, location.longitude], 15, {
-          animate: true,
-          duration: 0.5
-        });
-      }
-    }
-  }, [selectedLocationId, locations, map]);
-
-  return null;
 }
 
 export function PhotoMap({ 
   locations, 
   selectedLocationId, 
   onLocationClick, 
-  center = [46.603354, 1.888334], // Center of France
-  zoom = 6,
   className = ""
 }: PhotoMapProps) {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<HTMLDivElement>(null);
+  const leafletMapRef = useRef<any>(null);
 
-  // Create custom marker icon for selected location
-  const createCustomIcon = (selected: boolean, photoCount: number) => {
-    const baseClasses = "flex items-center justify-center text-white font-bold text-xs rounded-full border-2 border-white shadow-lg";
-    const bgColor = selected ? "bg-red-500" : "bg-blue-500";
-    const size = photoCount > 1 ? "w-8 h-8" : "w-6 h-6";
-    
-    return divIcon({
-      className: 'custom-div-icon',
-      html: `<div class="${baseClasses} ${bgColor} ${size}">
-        ${photoCount > 1 ? photoCount : ''}
-      </div>`,
-      iconSize: photoCount > 1 ? [32, 32] : [24, 24],
-      iconAnchor: photoCount > 1 ? [16, 32] : [12, 24],
-    });
-  };
-
-  // Auto-fit bounds when locations change
   useEffect(() => {
-    if (mapRef.current && locations.length > 0) {
-      const map = mapRef.current;
-      const bounds = locations.map(loc => [loc.latitude, loc.longitude] as LatLngExpression);
-      
-      if (bounds.length === 1) {
-        map.setView(bounds[0], 15);
-      } else if (bounds.length > 1) {
-        map.fitBounds(bounds, { padding: [20, 20] });
+    if (!mapRef.current || typeof window === 'undefined') return;
+
+    // Dynamically import leaflet to avoid SSR issues
+    import('leaflet').then((L) => {
+      // Clear existing map
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
       }
-    }
-  }, [locations]);
+
+      // Calculate center point from locations
+      let center: [number, number] = [46.603354, 1.888334]; // Default to France
+      if (locations.length > 0) {
+        const avgLat = locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length;
+        const avgLng = locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length;
+        center = [avgLat, avgLng];
+      }
+
+      // Create map
+      const map = L.map(mapRef.current).setView(center, locations.length > 0 ? 10 : 6);
+
+      // Add tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map);
+
+      // Add markers
+      locations.forEach((location) => {
+        const isSelected = location.id === selectedLocationId;
+        
+        // Create custom marker
+        const markerIcon = L.divIcon({
+          className: 'custom-div-icon',
+          html: `<div style="
+            width: ${location.photoCount > 1 ? '32px' : '24px'}; 
+            height: ${location.photoCount > 1 ? '32px' : '24px'}; 
+            background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
+            border: 2px solid white; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          ">
+            ${location.photoCount > 1 ? location.photoCount : ''}
+          </div>`,
+          iconSize: location.photoCount > 1 ? [32, 32] : [24, 24],
+          iconAnchor: location.photoCount > 1 ? [16, 32] : [12, 24],
+        });
+
+        const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
+          .addTo(map);
+
+        // Add popup
+        marker.bindPopup(`
+          <div style="text-align: center;">
+            <h4 style="font-weight: 600; margin-bottom: 4px;">${location.title}</h4>
+            <p style="color: #666; font-size: 12px; margin-bottom: 4px;">${location.date}</p>
+            <p style="font-size: 12px;">${location.photoCount} photo${location.photoCount !== 1 ? 's' : ''}</p>
+          </div>
+        `);
+
+        // Add click handler
+        marker.on('click', () => {
+          onLocationClick?.(location.id);
+        });
+      });
+
+      // Fit bounds if we have locations
+      if (locations.length > 0) {
+        const group = L.featureGroup(
+          locations.map(loc => L.marker([loc.latitude, loc.longitude]))
+        );
+        map.fitBounds(group.getBounds().pad(0.1));
+      }
+
+      leafletMapRef.current = map;
+
+      // Focus on selected location
+      if (selectedLocationId) {
+        const selectedLocation = locations.find(loc => loc.id === selectedLocationId);
+        if (selectedLocation) {
+          map.setView([selectedLocation.latitude, selectedLocation.longitude], 15);
+        }
+      }
+    }).catch((error) => {
+      console.error('Failed to load Leaflet:', error);
+    });
+
+    return () => {
+      if (leafletMapRef.current) {
+        leafletMapRef.current.remove();
+        leafletMapRef.current = null;
+      }
+    };
+  }, [locations, selectedLocationId, onLocationClick]);
 
   if (locations.length === 0) {
     return (
       <div className={`flex items-center justify-center h-full bg-muted/20 ${className}`}>
         <div className="text-center">
-          <p className="text-muted-foreground">Aucune photo géolocalisée</p>
+          <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Aucune photo géolocalisée</h3>
+          <p className="text-muted-foreground">
+            Ajoutez des photos avec des données de localisation pour voir la carte
+          </p>
         </div>
       </div>
     );
@@ -107,41 +145,11 @@ export function PhotoMap({
 
   return (
     <div className={`map-container ${className}`}>
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        className="w-full h-full"
-        ref={mapRef}
-        key={`map-${locations.length}`}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <MapController selectedLocationId={selectedLocationId} locations={locations} />
-        
-        {locations.map((location) => (
-          <Marker
-            key={location.id}
-            position={[location.latitude, location.longitude]}
-            icon={createCustomIcon(location.id === selectedLocationId, location.photoCount)}
-            eventHandlers={{
-              click: () => onLocationClick?.(location.id),
-            }}
-          >
-            <Popup>
-              <div className="text-center">
-                <h4 className="font-semibold text-sm mb-1">{location.title}</h4>
-                <p className="text-xs text-muted-foreground mb-1">{location.date}</p>
-                <p className="text-xs">
-                  {location.photoCount} photo{location.photoCount !== 1 ? 's' : ''}
-                </p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div 
+        ref={mapRef} 
+        className="w-full h-full rounded-lg"
+        style={{ minHeight: '400px' }}
+      />
     </div>
   );
 }

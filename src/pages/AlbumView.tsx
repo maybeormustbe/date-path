@@ -6,7 +6,8 @@ import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Plus, Camera } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -43,6 +44,8 @@ export default function AlbumView() {
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string>();
+  const [editingDayId, setEditingDayId] = useState<string>();
+  const [editingTitle, setEditingTitle] = useState('');
 
   useEffect(() => {
     if (albumId && user) {
@@ -142,6 +145,39 @@ export default function AlbumView() {
     }
   };
 
+  const startEditingTitle = (day: DayEntry, index: number) => {
+    setEditingDayId(day.id);
+    setEditingTitle(day.title || `Jour ${index + 1}`);
+  };
+
+  const saveTitle = async (dayId: string) => {
+    try {
+      const { error } = await supabase
+        .from('day_entries')
+        .update({ title: editingTitle })
+        .eq('id', dayId);
+
+      if (error) throw error;
+
+      // Update local state
+      setDayEntries(prev => prev.map(day => 
+        day.id === dayId ? { ...day, title: editingTitle } : day
+      ));
+      
+      setEditingDayId(undefined);
+      setEditingTitle('');
+      toast.success('Titre mis à jour');
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Erreur lors de la mise à jour du titre');
+    }
+  };
+
+  const cancelEditing = () => {
+    setEditingDayId(undefined);
+    setEditingTitle('');
+  };
+
   const mapLocations = dayEntries
     .filter(day => day.latitude && day.longitude && !day.id.startsWith('placeholder-'))
     .map((day, index) => {
@@ -225,10 +261,10 @@ export default function AlbumView() {
                   {dayEntries.map((day, index) => (
                     <Card 
                       key={day.id}
-                      className={`cursor-pointer transition-all hover:shadow-medium ${
+                      className={`group cursor-pointer transition-all hover:shadow-medium ${
                         selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
                       } ${day.id.startsWith('placeholder-') ? 'opacity-60' : ''}`}
-                      onClick={() => !day.id.startsWith('placeholder-') && setSelectedDayId(day.id)}
+                      onClick={() => !day.id.startsWith('placeholder-') && editingDayId !== day.id && setSelectedDayId(day.id)}
                     >
                       <CardContent className="p-3">
                         <div className="flex gap-3">
@@ -251,21 +287,69 @@ export default function AlbumView() {
                           {/* Contenu texte */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
-                              <h4 className="font-medium text-sm">
-                                Jour {index + 1}
-                              </h4>
-                              {!day.id.startsWith('placeholder-') && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="h-6 px-2 text-xs"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/album/${albumId}/day/${day.id}`);
-                                  }}
-                                >
-                                  Voir
-                                </Button>
+                              {editingDayId === day.id ? (
+                                <div className="flex items-center gap-1 flex-1">
+                                  <Input
+                                    value={editingTitle}
+                                    onChange={(e) => setEditingTitle(e.target.value)}
+                                    className="h-6 text-xs px-1 flex-1"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') saveTitle(day.id);
+                                      if (e.key === 'Escape') cancelEditing();
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => saveTitle(day.id)}
+                                  >
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={cancelEditing}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium text-sm">
+                                      {day.title || `Jour ${index + 1}`}
+                                    </h4>
+                                    {!day.id.startsWith('placeholder-') && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          startEditingTitle(day, index);
+                                        }}
+                                      >
+                                        <Edit2 className="h-3 w-3" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {!day.id.startsWith('placeholder-') && (
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 px-2 text-xs"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate(`/album/${albumId}/day/${day.id}`);
+                                      }}
+                                    >
+                                      Voir
+                                    </Button>
+                                  )}
+                                </>
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">

@@ -55,108 +55,42 @@ export function PhotoMap({
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
         });
 
-        // Clear existing map
-        if (leafletMapRef.current) {
-          leafletMapRef.current.remove();
-        }
-        
-        // Clear existing markers
-        markersRef.current = [];
+        // Only initialize map if it doesn't exist
+        if (!leafletMapRef.current) {
+          // Calculate center
+          let center: [number, number] = [46.603354, 1.888334];
+          if (locations.length > 0) {
+            const avgLat = locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length;
+            const avgLng = locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length;
+            center = [avgLat, avgLng];
+          }
 
-        // Calculate center
-        let center: [number, number] = [46.603354, 1.888334];
-        if (locations.length > 0) {
-          const avgLat = locations.reduce((sum, loc) => sum + loc.latitude, 0) / locations.length;
-          const avgLng = locations.reduce((sum, loc) => sum + loc.longitude, 0) / locations.length;
-          center = [avgLat, avgLng];
-        }
-
-        // Create map
-        const map = L.map(mapRef.current, {
-          center,
-          zoom: locations.length > 0 ? 10 : 6,
-          zoomControl: true,
-          attributionControl: true
-        });
-
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 18
-        }).addTo(map);
-
-        leafletMapRef.current = map;
-
-        // Wait for map to load
-        map.whenReady(() => {
-          // Add markers after map is ready
-          locations.forEach((location) => {
-            const isSelected = location.id === selectedLocationId;
-            
-            // Create tag-like marker with title
-            const markerIcon = L.divIcon({
-              className: 'custom-tag-marker',
-              html: `<div style="
-                background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
-                color: white;
-                padding: 4px 8px;
-                border-radius: 12px;
-                font-size: 11px;
-                font-weight: 600;
-                white-space: nowrap;
-                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                border: 2px solid white;
-                position: relative;
-                text-align: center;
-                max-width: 120px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-              ">
-                ${location.title}
-                <div style="
-                  position: absolute;
-                  bottom: -6px;
-                  left: 50%;
-                  transform: translateX(-50%);
-                  width: 0;
-                  height: 0;
-                  border-left: 6px solid transparent;
-                  border-right: 6px solid transparent;
-                  border-top: 6px solid ${isSelected ? '#ef4444' : '#3b82f6'};
-                "></div>
-              </div>`,
-              iconSize: [120, 28],
-              iconAnchor: [60, 34], // Adjusted for the pointer
-            });
-
-            const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
-              .addTo(map);
-
-            markersRef.current.push(marker);
-
-            // Add popup
-            marker.bindPopup(`
-              <div style="text-align: center; padding: 5px;">
-                <h4 style="margin: 0 0 5px 0; font-weight: 600;">${location.title}</h4>
-                <p style="margin: 0 0 3px 0; color: #666; font-size: 12px;">${location.date}</p>
-                <p style="margin: 0; font-size: 12px;">${location.photoCount} photo${location.photoCount !== 1 ? 's' : ''}</p>
-              </div>
-            `);
-
-            // Click handler
-            marker.on('click', () => {
-              onLocationClick?.(location.id);
-            });
+          // Create map
+          const map = L.map(mapRef.current, {
+            center,
+            zoom: locations.length > 0 ? 10 : 6,
+            zoomControl: true,
+            attributionControl: true
           });
 
+          // Add OpenStreetMap tiles
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18
+          }).addTo(map);
+
+          leafletMapRef.current = map;
+
           // Fit bounds if we have multiple locations
-          if (locations.length > 1) {
-            const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
-            map.fitBounds(bounds, { padding: [20, 20] });
-          } else if (locations.length === 1) {
-            map.setView([locations[0].latitude, locations[0].longitude], 15);
-          }
-        });
+          map.whenReady(() => {
+            if (locations.length > 1) {
+              const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
+              map.fitBounds(bounds, { padding: [20, 20] });
+            } else if (locations.length === 1) {
+              map.setView([locations[0].latitude, locations[0].longitude], 15);
+            }
+          });
+        }
 
       } catch (error) {
         console.error('Failed to load map:', error);
@@ -166,13 +100,82 @@ export function PhotoMap({
     loadLeaflet();
 
     return () => {
-      if (leafletMapRef.current) {
-        leafletMapRef.current.remove();
-        leafletMapRef.current = null;
-      }
-      markersRef.current = [];
+      // Don't remove map on unmount, only on component destruction
     };
-  }, [locations]);
+  }, []); // Empty dependency array - only run once
+
+  // Separate effect for updating markers
+  useEffect(() => {
+    if (!leafletMapRef.current || locations.length === 0) return;
+
+    const L = window.L || require('leaflet');
+    
+    // Clear existing markers
+    markersRef.current.forEach(marker => {
+      leafletMapRef.current?.removeLayer(marker);
+    });
+    markersRef.current = [];
+
+    // Add new markers
+    locations.forEach((location) => {
+      const isSelected = location.id === selectedLocationId;
+      
+      // Create tag-like marker with title
+      const markerIcon = L.divIcon({
+        className: 'custom-tag-marker',
+        html: `<div style="
+          background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
+          color: white;
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          white-space: nowrap;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          border: 2px solid white;
+          position: relative;
+          text-align: center;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        ">
+          ${location.title}
+          <div style="
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid ${isSelected ? '#ef4444' : '#3b82f6'};
+          "></div>
+        </div>`,
+        iconSize: [120, 28],
+        iconAnchor: [60, 34], // Adjusted for the pointer
+      });
+
+      const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })
+        .addTo(leafletMapRef.current!);
+
+      markersRef.current.push(marker);
+
+      // Add popup
+      marker.bindPopup(`
+        <div style="text-align: center; padding: 5px;">
+          <h4 style="margin: 0 0 5px 0; font-weight: 600;">${location.title}</h4>
+          <p style="margin: 0 0 3px 0; color: #666; font-size: 12px;">${location.date}</p>
+          <p style="margin: 0; font-size: 12px;">${location.photoCount} photo${location.photoCount !== 1 ? 's' : ''}</p>
+        </div>
+      `);
+
+      // Click handler
+      marker.on('click', () => {
+        onLocationClick?.(location.id);
+      });
+    });
+  }, [locations, selectedLocationId, onLocationClick]);
 
   // Handle selected location change
   useEffect(() => {

@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/components/auth/AuthProvider";
 import { AuthPage } from "@/components/auth/AuthPage";
 import { AlbumList } from "@/components/album/AlbumList";
 import AlbumView from "./pages/AlbumView";
+import DayView from "./pages/DayView";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,11 @@ const App = () => (
             <Route path="/album/:albumId" element={
               <ProtectedRoute>
                 <AlbumView />
+              </ProtectedRoute>
+            } />
+            <Route path="/album/:albumId/day/:dayId" element={
+              <ProtectedRoute>
+                <DayView />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

@@ -170,15 +170,15 @@ export default function AlbumView() {
                 </Button>
               </div>
              ) : (
-               <div className="space-y-3">
-                 {dayEntries.map((day, index) => (
-                   <Card 
-                     key={day.id}
-                     className={`cursor-pointer transition-all hover:shadow-medium ${
-                       selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
-                     }`}
-                     onClick={() => setSelectedDayId(day.id)}
-                   >
+                <div className="space-y-3">
+                  {dayEntries.map((day, index) => (
+                    <Card 
+                      key={day.id}
+                      className={`cursor-pointer transition-all hover:shadow-medium ${
+                        selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
+                      }`}
+                      onClick={() => setSelectedDayId(day.id)}
+                    >
                      <CardContent className="p-3">
                        <div className="flex gap-3">
                           {/* Vignette */}
@@ -196,16 +196,29 @@ export default function AlbumView() {
                           )}
                          
                          {/* Contenu texte */}
-                         <div className="flex-1 min-w-0">
-                           <h4 className="font-medium text-sm mb-1">
-                             Jour {index + 1}
-                           </h4>
-                           <div className="text-xs text-muted-foreground space-y-0.5">
-                             <p>{day.date}</p>
-                             {day.location_name && <p>{day.location_name}</p>}
-                             <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
-                           </div>
-                         </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="font-medium text-sm">
+                                Jour {index + 1}
+                              </h4>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-xs"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/album/${albumId}/day/${day.id}`);
+                                }}
+                              >
+                                Voir
+                              </Button>
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-0.5">
+                              <p>{day.date}</p>
+                              {day.location_name && <p>{day.location_name}</p>}
+                              <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
+                            </div>
+                          </div>
                        </div>
                      </CardContent>
                    </Card>

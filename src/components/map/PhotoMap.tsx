@@ -81,7 +81,7 @@ export function PhotoMap({
 
           leafletMapRef.current = map;
 
-          // Fit bounds if we have multiple locations
+          // Fit bounds if we have multiple locations and add initial markers
           map.whenReady(() => {
             if (locations.length > 1) {
               const bounds = L.latLngBounds(locations.map(loc => [loc.latitude, loc.longitude]));
@@ -89,6 +89,9 @@ export function PhotoMap({
             } else if (locations.length === 1) {
               map.setView([locations[0].latitude, locations[0].longitude], 15);
             }
+            
+            // Add initial markers after map is ready
+            updateMarkers(L);
           });
         }
 
@@ -104,11 +107,9 @@ export function PhotoMap({
     };
   }, []); // Empty dependency array - only run once
 
-  // Separate effect for updating markers
-  useEffect(() => {
+  // Function to update markers
+  const updateMarkers = (L: any) => {
     if (!leafletMapRef.current || locations.length === 0) return;
-
-    const L = window.L || require('leaflet');
     
     // Clear existing markers
     markersRef.current.forEach(marker => {
@@ -175,6 +176,14 @@ export function PhotoMap({
         onLocationClick?.(location.id);
       });
     });
+  };
+
+  // Separate effect for updating markers
+  useEffect(() => {
+    if (!leafletMapRef.current) return;
+    
+    const L = window.L || require('leaflet');
+    updateMarkers(L);
   }, [locations, selectedLocationId, onLocationClick]);
 
   // Handle selected location change

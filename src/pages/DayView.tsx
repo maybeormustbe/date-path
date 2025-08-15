@@ -143,7 +143,7 @@ export default function DayView() {
         id: photo.id,
         latitude: photo.latitude!,
         longitude: photo.longitude!,
-        title: dayEntry?.title || `Jour du ${dayEntry?.date}`,
+        title: photo.title || `Photo ${photo.id.slice(0, 8)}`,
         date: photo.taken_at || '',
         photoCount: 1,
         selected: photo.id === selectedPhotoId

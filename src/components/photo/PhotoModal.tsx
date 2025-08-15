@@ -1,7 +1,6 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface PhotoModalProps {
   isOpen: boolean;
@@ -33,14 +32,15 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: Pho
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex justify-center items-center max-h-[70vh]">
-          <AspectRatio ratio={16 / 9} className="w-full">
-            <img
-              src={imageUrl}
-              alt={photo.title || 'Photo'}
-              className="w-full h-full object-contain rounded-md"
-            />
-          </AspectRatio>
+        <div className="flex justify-center items-center max-h-[70vh] overflow-hidden">
+          <img
+            src={imageUrl}
+            alt={photo.title || 'Photo'}
+            className="max-w-full max-h-full object-contain rounded-md"
+            onError={(e) => {
+              console.error('Erreur de chargement de l\'image:', imageUrl);
+            }}
+          />
         </div>
       </DialogContent>
     </Dialog>

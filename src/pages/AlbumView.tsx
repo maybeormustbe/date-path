@@ -7,6 +7,7 @@ import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Plus, Camera } from 'lucide-react';
+import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
 interface Album {
@@ -68,6 +69,16 @@ export default function AlbumView() {
 
       if (dayError && dayError.code !== 'PGRST116') throw dayError;
       
+      // Get all photos to determine date range
+      const { data: photosData, error: photosError } = await supabase
+        .from('photos')
+        .select('taken_at')
+        .eq('album_id', albumId)
+        .not('taken_at', 'is', null)
+        .order('taken_at');
+
+      if (photosError) throw photosError;
+
       const dayEntriesWithCounts = (dayData || []).map((day: any) => ({
         id: day.id,
         date: day.date,
@@ -83,8 +94,45 @@ export default function AlbumView() {
           title: day.cover_photo_title
         } : null
       }));
+
+      // Create complete day list including missing days
+      let completeDayEntries = [...dayEntriesWithCounts];
+
+      if (photosData && photosData.length > 0) {
+        const firstDate = parseISO(photosData[0].taken_at.split('T')[0]);
+        const lastDate = parseISO(photosData[photosData.length - 1].taken_at.split('T')[0]);
+        
+        const allDates = [];
+        let currentDate = firstDate;
+        
+        while (currentDate <= lastDate) {
+          allDates.push(format(currentDate, 'yyyy-MM-dd'));
+          currentDate = addDays(currentDate, 1);
+        }
+
+        // Add missing days
+        allDates.forEach(dateStr => {
+          const existingDay = dayEntriesWithCounts.find(day => day.date === dateStr);
+          if (!existingDay) {
+            completeDayEntries.push({
+              id: `placeholder-${dateStr}`,
+              date: dateStr,
+              title: null,
+              location_name: null,
+              latitude: null,
+              longitude: null,
+              cover_photo_id: null,
+              photo_count: 0,
+              cover_photo: null
+            });
+          }
+        });
+
+        // Sort by date
+        completeDayEntries.sort((a, b) => a.date.localeCompare(b.date));
+      }
       
-      setDayEntries(dayEntriesWithCounts);
+      setDayEntries(completeDayEntries);
 
     } catch (error) {
       console.error('Erreur:', error);
@@ -95,16 +143,19 @@ export default function AlbumView() {
   };
 
   const mapLocations = dayEntries
-    .filter(day => day.latitude && day.longitude)
-    .map((day, index) => ({
-      id: day.id,
-      latitude: day.latitude!,
-      longitude: day.longitude!,
-      title: `Jour ${dayEntries.findIndex(d => d.id === day.id) + 1}`,
-      date: day.date,
-      photoCount: day.photo_count,
-      selected: day.id === selectedDayId
-    }));
+    .filter(day => day.latitude && day.longitude && !day.id.startsWith('placeholder-'))
+    .map((day, index) => {
+      const dayIndex = dayEntries.findIndex(d => d.id === day.id) + 1;
+      return {
+        id: day.id,
+        latitude: day.latitude!,
+        longitude: day.longitude!,
+        title: `Jour ${dayIndex}`,
+        date: day.date,
+        photoCount: day.photo_count,
+        selected: day.id === selectedDayId
+      };
+    });
 
   if (loading) {
     return (
@@ -176,42 +227,46 @@ export default function AlbumView() {
                       key={day.id}
                       className={`cursor-pointer transition-all hover:shadow-medium ${
                         selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
-                      }`}
-                      onClick={() => setSelectedDayId(day.id)}
+                      } ${day.id.startsWith('placeholder-') ? 'opacity-60' : ''}`}
+                      onClick={() => !day.id.startsWith('placeholder-') && setSelectedDayId(day.id)}
                     >
-                     <CardContent className="p-3">
-                       <div className="flex gap-3">
-                          {/* Vignette */}
-                          {day.cover_photo?.thumbnail_path && (
-                            <div className="w-16 h-16 flex-shrink-0">
-                              <img
-                                src={supabase.storage.from('thumbnails').getPublicUrl(day.cover_photo.thumbnail_path).data.publicUrl}
-                                alt="Vignette du jour"
-                                className="w-full h-full object-cover rounded-md bg-muted"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            </div>
-                          )}
-                         
-                         {/* Contenu texte */}
+                      <CardContent className="p-3">
+                        <div className="flex gap-3">
+                           {/* Vignette ou placeholder */}
+                           <div className="w-16 h-16 flex-shrink-0">
+                             {day.cover_photo?.thumbnail_path ? (
+                               <img
+                                 src={supabase.storage.from('thumbnails').getPublicUrl(day.cover_photo.thumbnail_path).data.publicUrl}
+                                 alt="Vignette du jour"
+                                 className="w-full h-full object-cover rounded-md bg-muted"
+                                 onError={(e) => {
+                                   e.currentTarget.style.display = 'none';
+                                 }}
+                               />
+                             ) : (
+                               <div className="w-full h-full bg-muted rounded-md" />
+                             )}
+                           </div>
+                          
+                          {/* Contenu texte */}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between mb-1">
                               <h4 className="font-medium text-sm">
                                 Jour {index + 1}
                               </h4>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/album/${albumId}/day/${day.id}`);
-                                }}
-                              >
-                                Voir
-                              </Button>
+                              {!day.id.startsWith('placeholder-') && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/album/${albumId}/day/${day.id}`);
+                                  }}
+                                >
+                                  Voir
+                                </Button>
+                              )}
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p>{day.date}</p>
@@ -219,9 +274,9 @@ export default function AlbumView() {
                               <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
                             </div>
                           </div>
-                       </div>
-                     </CardContent>
-                   </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
                  ))}
                </div>
              )}

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, Save, MapPin } from 'lucide-react';
+import { ArrowLeft, MapPin, Save, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Album {
@@ -25,6 +25,7 @@ interface DayEntry {
   location_name: string | null;
   latitude: number | null;
   longitude: number | null;
+  cover_photo_id: string | null;
 }
 
 interface Photo {
@@ -240,19 +241,21 @@ export default function DayView() {
               </div>
             ) : (
               <div className="space-y-3">
-                 {photos.map(photo => (
+                 {photos.map(photo => {
+                  const isCoverPhoto = dayEntry?.cover_photo_id === photo.id;
+                  return (
                   <Card 
                     key={photo.id} 
                     className={`group cursor-pointer transition-all hover:shadow-medium ${
                       selectedPhotoId === photo.id ? 'ring-2 ring-primary shadow-medium' : ''
-                    }`}
+                    } ${isCoverPhoto ? 'ring-2 ring-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' : ''}`}
                     onClick={() => setSelectedPhotoId(photo.id)}
                   >
                     <CardContent className="p-3">
                       <div className="flex gap-3">
                         {/* Thumbnail */}
-                        {photo.thumbnail_path && (
-                          <div className="w-16 h-16 flex-shrink-0">
+                        <div className="w-16 h-16 flex-shrink-0 relative">
+                          {photo.thumbnail_path && (
                             <img
                               src={supabase.storage.from('thumbnails').getPublicUrl(photo.thumbnail_path).data.publicUrl}
                               alt="Vignette"
@@ -261,8 +264,14 @@ export default function DayView() {
                                 e.currentTarget.style.display = 'none';
                               }}
                             />
-                          </div>
-                        )}
+                          )}
+                          {/* Icône étoile pour la photo de couverture */}
+                          {isCoverPhoto && (
+                            <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-1">
+                              <Star className="h-3 w-3 text-white fill-white" />
+                            </div>
+                          )}
+                        </div>
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
@@ -280,9 +289,14 @@ export default function DayView() {
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
-                            <h4 className="font-medium text-sm mb-1">
-                              {photo.title || 'Photo sans titre'}
-                            </h4>
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-medium text-sm mb-1">
+                                {photo.title || 'Photo sans titre'}
+                              </h4>
+                              {isCoverPhoto && (
+                                <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                              )}
+                            </div>
                           )}
                           <div className="text-xs text-muted-foreground space-y-0.5">
                             {photo.location_name && <p>{photo.location_name}</p>}
@@ -313,8 +327,9 @@ export default function DayView() {
                         </div>
                       </div>
                     </CardContent>
-                  </Card>
-                ))}
+                   </Card>
+                   );
+                })}
               </div>
             )}
           </div>

@@ -42,6 +42,7 @@ export default function DayView() {
   const [album, setAlbum] = useState<Album | null>(null);
   const [dayEntry, setDayEntry] = useState<DayEntry | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string>();
   const [dayDescription, setDayDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,8 @@ export default function DayView() {
       longitude: photo.longitude!,
       title: photo.title || 'Photo sans titre',
       date: photo.taken_at || '',
-      photoCount: 1
+      photoCount: 1,
+      selected: photo.id === selectedPhotoId
     }));
 
   if (loading) {
@@ -183,7 +185,13 @@ export default function DayView() {
             ) : (
               <div className="space-y-3">
                 {photos.map(photo => (
-                  <Card key={photo.id} className="cursor-pointer transition-all hover:shadow-medium">
+                  <Card 
+                    key={photo.id} 
+                    className={`cursor-pointer transition-all hover:shadow-medium ${
+                      selectedPhotoId === photo.id ? 'ring-2 ring-primary shadow-medium' : ''
+                    }`}
+                    onClick={() => setSelectedPhotoId(photo.id)}
+                  >
                     <CardContent className="p-3">
                       <div className="flex gap-3">
                         {/* Thumbnail */}
@@ -229,6 +237,8 @@ export default function DayView() {
           {mapLocations.length > 0 ? (
             <PhotoMap
               locations={mapLocations}
+              selectedLocationId={selectedPhotoId}
+              onLocationClick={setSelectedPhotoId}
               className="w-full h-full"
             />
           ) : (

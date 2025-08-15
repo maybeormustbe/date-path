@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PhotoMap } from '@/components/map/PhotoMap';
+import { PhotoModal } from '@/components/photo/PhotoModal';
+import { PhotoActions } from '@/components/photo/PhotoActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,6 +48,7 @@ export default function DayView() {
   const [dayDescription, setDayDescription] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [modalPhoto, setModalPhoto] = useState<Photo | null>(null);
 
   useEffect(() => {
     if (albumId && dayId && user) {
@@ -113,6 +116,23 @@ export default function DayView() {
       toast.error('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSetAsCover = async (photoId: string) => {
+    try {
+      const { error } = await supabase
+        .from('day_entries')
+        .update({ cover_photo_id: photoId })
+        .eq('id', dayId);
+
+      if (error) throw error;
+      
+      toast.success('Photo définie comme miniature du jour');
+      fetchData(); // Refresh data
+    } catch (error) {
+      console.error('Erreur lors de la définition de la miniature:', error);
+      toast.error('Erreur lors de la définition de la miniature');
     }
   };
 
@@ -225,6 +245,17 @@ export default function DayView() {
                             )}
                           </div>
                         </div>
+                        
+                        {/* Actions */}
+                        <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                          <PhotoActions
+                            photo={photo}
+                            onPhotoUpdated={fetchData}
+                            onPhotoDeleted={fetchData}
+                            onViewPhoto={() => setModalPhoto(photo)}
+                            onSetAsCover={() => handleSetAsCover(photo.id)}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -280,6 +311,15 @@ export default function DayView() {
           />
         </div>
       </div>
+
+      {/* Photo Modal */}
+      <PhotoModal
+        isOpen={!!modalPhoto}
+        onClose={() => setModalPhoto(null)}
+        photo={modalPhoto}
+        albumTitle={album?.title || ''}
+        dayTitle={dayEntry?.title || `Jour du ${dayEntry?.date}`}
+      />
     </div>
   );
 }

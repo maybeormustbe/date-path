@@ -7,6 +7,7 @@ import { PhotoModal } from '@/components/photo/PhotoModal';
 import { PhotoActions } from '@/components/photo/PhotoActions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, Save, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
@@ -49,6 +50,8 @@ export default function DayView() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modalPhoto, setModalPhoto] = useState<Photo | null>(null);
+  const [editingPhotoId, setEditingPhotoId] = useState<string>();
+  const [editingPhotoTitle, setEditingPhotoTitle] = useState('');
 
   useEffect(() => {
     if (albumId && dayId && user) {
@@ -136,6 +139,37 @@ export default function DayView() {
     }
   };
 
+  const startEditingPhotoTitle = (photo: Photo) => {
+    setEditingPhotoId(photo.id);
+    setEditingPhotoTitle(photo.title || '');
+  };
+
+  const savePhotoTitle = async () => {
+    if (!editingPhotoId) return;
+    
+    try {
+      const { error } = await supabase
+        .from('photos')
+        .update({ title: editingPhotoTitle || null })
+        .eq('id', editingPhotoId);
+
+      if (error) throw error;
+      
+      toast.success('Titre modifié');
+      setEditingPhotoId(undefined);
+      setEditingPhotoTitle('');
+      fetchData();
+    } catch (error) {
+      console.error('Erreur lors de la modification du titre:', error);
+      toast.error('Erreur lors de la modification');
+    }
+  };
+
+  const cancelEditingPhotoTitle = () => {
+    setEditingPhotoId(undefined);
+    setEditingPhotoTitle('');
+  };
+
   const mapLocations = useMemo(() => 
     photos
       .filter(photo => photo.latitude && photo.longitude)
@@ -206,10 +240,10 @@ export default function DayView() {
               </div>
             ) : (
               <div className="space-y-3">
-                {photos.map(photo => (
+                 {photos.map(photo => (
                   <Card 
                     key={photo.id} 
-                    className={`cursor-pointer transition-all hover:shadow-medium ${
+                    className={`group cursor-pointer transition-all hover:shadow-medium ${
                       selectedPhotoId === photo.id ? 'ring-2 ring-primary shadow-medium' : ''
                     }`}
                     onClick={() => setSelectedPhotoId(photo.id)}
@@ -232,9 +266,24 @@ export default function DayView() {
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm mb-1">
-                            {photo.title || 'Photo sans titre'}
-                          </h4>
+                          {editingPhotoId === photo.id ? (
+                            <Input
+                              value={editingPhotoTitle}
+                              onChange={(e) => setEditingPhotoTitle(e.target.value)}
+                              className="h-6 text-sm font-medium mb-1 p-1"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') savePhotoTitle();
+                                if (e.key === 'Escape') cancelEditingPhotoTitle();
+                              }}
+                              onBlur={savePhotoTitle}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          ) : (
+                            <h4 className="font-medium text-sm mb-1">
+                              {photo.title || 'Photo sans titre'}
+                            </h4>
+                          )}
                           <div className="text-xs text-muted-foreground space-y-0.5">
                             {photo.location_name && <p>{photo.location_name}</p>}
                             {photo.taken_at && (
@@ -254,6 +303,12 @@ export default function DayView() {
                             onPhotoDeleted={fetchData}
                             onViewPhoto={() => setModalPhoto(photo)}
                             onSetAsCover={() => handleSetAsCover(photo.id)}
+                            isEditingTitle={editingPhotoId === photo.id}
+                            editingTitle={editingPhotoTitle}
+                            onStartEditingTitle={() => startEditingPhotoTitle(photo)}
+                            onSaveTitle={savePhotoTitle}
+                            onCancelEditing={cancelEditingPhotoTitle}
+                            onEditingTitleChange={setEditingPhotoTitle}
                           />
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -116,17 +116,19 @@ export default function DayView() {
     }
   };
 
-  const mapLocations = photos
-    .filter(photo => photo.latitude && photo.longitude)
-    .map(photo => ({
-      id: photo.id,
-      latitude: photo.latitude!,
-      longitude: photo.longitude!,
-      title: photo.title || 'Photo sans titre',
-      date: photo.taken_at || '',
-      photoCount: 1,
-      selected: photo.id === selectedPhotoId
-    }));
+  const mapLocations = useMemo(() => 
+    photos
+      .filter(photo => photo.latitude && photo.longitude)
+      .map(photo => ({
+        id: photo.id,
+        latitude: photo.latitude!,
+        longitude: photo.longitude!,
+        title: photo.title || 'Photo sans titre',
+        date: photo.taken_at || '',
+        photoCount: 1,
+        selected: photo.id === selectedPhotoId
+      })), [photos, selectedPhotoId]
+  );
 
   if (loading) {
     return (

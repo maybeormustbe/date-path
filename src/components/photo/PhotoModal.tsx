@@ -22,7 +22,7 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: Pho
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-hidden z-[9999]">
         <DialogHeader>
           <DialogTitle className="text-center">
             <div className="space-y-1">

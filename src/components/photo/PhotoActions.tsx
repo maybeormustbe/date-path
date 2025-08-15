@@ -93,7 +93,7 @@ export const PhotoActions = ({
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="z-[9999]">
           <DropdownMenuItem onClick={() => setShowEditDialog(true)}>
             <Edit className="h-4 w-4 mr-2" />
             Modifier le titre
@@ -118,7 +118,7 @@ export const PhotoActions = ({
 
       {/* Edit Title Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="z-[9999]">
           <DialogHeader>
             <DialogTitle>Modifier le titre de la photo</DialogTitle>
           </DialogHeader>
@@ -147,7 +147,7 @@ export const PhotoActions = ({
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[9999]">
           <AlertDialogHeader>
             <AlertDialogTitle>Supprimer la photo</AlertDialogTitle>
             <AlertDialogDescription>

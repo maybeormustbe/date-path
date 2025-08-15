@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,9 +15,36 @@ interface PhotoModalProps {
 }
 
 export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: PhotoModalProps) => {
+  const [imageUrl, setImageUrl] = useState<string>('');
+  
+  useEffect(() => {
+    const getSignedUrl = async () => {
+      if (!photo) return;
+      
+      try {
+        const { data, error } = await supabase.storage
+          .from('photos')
+          .createSignedUrl(photo.file_path, 3600); // 1 hour expiry
+        
+        if (error) {
+          console.error('Erreur lors de la génération de l\'URL signée:', error);
+          return;
+        }
+        
+        setImageUrl(data.signedUrl);
+      } catch (error) {
+        console.error('Erreur:', error);
+      }
+    };
+    
+    if (isOpen && photo) {
+      getSignedUrl();
+    }
+  }, [isOpen, photo]);
+
   if (!photo) return null;
 
-  const imageUrl = supabase.storage.from('photos').getPublicUrl(photo.file_path).data.publicUrl;
+  
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

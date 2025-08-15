@@ -43,6 +43,9 @@ export function PhotoUploadModal({
 
   const createFileId = () => `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+  // Cache pour éviter les requêtes de géolocalisation en double
+  const locationCache = new Map<string, string>();
+
   const processFileMetadata = async (file: File): Promise<PhotoFile['metadata']> => {
     try {
       const exifData = await parse(file);
@@ -59,19 +62,40 @@ export function PhotoUploadModal({
         metadata.latitude = parseFloat(exifData.latitude);
         metadata.longitude = parseFloat(exifData.longitude);
         
-        // Try to get location name using reverse geocoding
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${metadata.latitude}&lon=${metadata.longitude}&zoom=14&addressdetails=1`
-          );
-          const locationData = await response.json();
-          
-          if (locationData?.display_name) {
-            const parts = locationData.display_name.split(',');
-            metadata.locationName = parts.slice(0, 2).join(', ').trim();
+        // Try to get location name using reverse geocoding avec cache et timeout
+        const coordKey = `${metadata.latitude.toFixed(4)},${metadata.longitude.toFixed(4)}`;
+        
+        if (locationCache.has(coordKey)) {
+          metadata.locationName = locationCache.get(coordKey);
+        } else {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
+            
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${metadata.latitude}&lon=${metadata.longitude}&zoom=14&addressdetails=1`,
+              { 
+                signal: controller.signal,
+                headers: {
+                  'User-Agent': 'PhotoApp/1.0'
+                }
+              }
+            );
+            clearTimeout(timeoutId);
+            
+            if (response.ok) {
+              const locationData = await response.json();
+              
+              if (locationData?.display_name) {
+                const parts = locationData.display_name.split(',');
+                const locationName = parts.slice(0, 2).join(', ').trim();
+                metadata.locationName = locationName;
+                locationCache.set(coordKey, locationName);
+              }
+            }
+          } catch (error) {
+            console.warn('Erreur lors de la géolocalisation inverse:', error);
           }
-        } catch (error) {
-          console.warn('Erreur lors de la géolocalisation inverse:', error);
         }
       }
 
@@ -82,10 +106,46 @@ export function PhotoUploadModal({
     }
   };
 
+  // Fonction pour traiter les fichiers par batches avec limitation des requêtes simultanées
+  const processBatch = async (files: File[], batchSize: number = 5) => {
+    const results: PhotoFile[] = [];
+    
+    for (let i = 0; i < files.length; i += batchSize) {
+      const batch = files.slice(i, i + batchSize);
+      const batchPromises = batch.map(async (file) => {
+        const id = createFileId();
+        const preview = URL.createObjectURL(file);
+        const metadata = await processFileMetadata(file);
+        
+        return {
+          file,
+          id,
+          preview,
+          metadata
+        };
+      });
+      
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+      
+      // Mise à jour progressive de l'UI
+      setFiles(prev => [...prev, ...batchResults]);
+      
+      // Petit délai entre les batches pour éviter de surcharger l'API
+      if (i + batchSize < files.length) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    return results;
+  };
+
   const handleFileSelect = useCallback(async (selectedFiles: FileList) => {
     setProcessingMetadata(true);
-    const newFiles: PhotoFile[] = [];
-
+    setFiles([]); // Reset pour affichage progressif
+    
+    // Filtrer les fichiers valides
+    const validFiles: File[] = [];
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       
@@ -93,26 +153,20 @@ export function PhotoUploadModal({
         toast.error(`${file.name} n'est pas une image valide`);
         continue;
       }
-
-      const id = createFileId();
-      const preview = URL.createObjectURL(file);
       
-      const metadata = await processFileMetadata(file);
-      
-      newFiles.push({
-        file,
-        id,
-        preview,
-        metadata
-      });
+      validFiles.push(file);
     }
-
-    setFiles(prev => [...prev, ...newFiles]);
-    setProcessingMetadata(false);
     
-    if (newFiles.length > 0) {
-      toast.success(`${newFiles.length} photo${newFiles.length !== 1 ? 's' : ''} ajoutée${newFiles.length !== 1 ? 's' : ''}`);
+    if (validFiles.length === 0) {
+      setProcessingMetadata(false);
+      return;
     }
+    
+    // Traitement par batches pour améliorer les performances
+    await processBatch(validFiles, 5);
+    
+    setProcessingMetadata(false);
+    toast.success(`${validFiles.length} photo${validFiles.length !== 1 ? 's' : ''} ajoutée${validFiles.length !== 1 ? 's' : ''}`);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {

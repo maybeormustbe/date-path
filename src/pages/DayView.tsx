@@ -123,11 +123,11 @@ export default function DayView() {
         id: photo.id,
         latitude: photo.latitude!,
         longitude: photo.longitude!,
-        title: photo.title || 'Photo sans titre',
+        title: dayEntry?.title || `Jour du ${dayEntry?.date}`,
         date: photo.taken_at || '',
         photoCount: 1,
         selected: photo.id === selectedPhotoId
-      })), [photos, selectedPhotoId]
+      })), [photos, selectedPhotoId, dayEntry]
   );
 
   if (loading) {

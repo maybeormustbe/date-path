@@ -186,7 +186,7 @@ export default function AlbumView() {
         id: day.id,
         latitude: day.latitude!,
         longitude: day.longitude!,
-        title: `Jour ${dayIndex}`,
+        title: day.title || `Jour ${dayIndex}`,
         date: day.date,
         photoCount: day.photo_count,
         selected: day.id === selectedDayId

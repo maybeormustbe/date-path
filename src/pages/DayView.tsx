@@ -389,6 +389,13 @@ export default function DayView() {
         photo={modalPhoto}
         albumTitle={album?.title || ''}
         dayTitle={dayEntry?.title || `Jour du ${dayEntry?.date}`}
+        photos={photos}
+        onNavigate={(photoId) => {
+          const photo = photos.find(p => p.id === photoId);
+          if (photo) {
+            setModalPhoto(photo);
+          }
+        }}
       />
     </div>
   );

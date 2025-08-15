@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PhotoModalProps {
@@ -12,9 +14,15 @@ interface PhotoModalProps {
   } | null;
   albumTitle: string;
   dayTitle: string;
+  photos: Array<{
+    id: string;
+    title: string | null;
+    file_path: string;
+  }>;
+  onNavigate: (photoId: string) => void;
 }
 
-export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: PhotoModalProps) => {
+export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photos, onNavigate }: PhotoModalProps) => {
   const [imageUrl, setImageUrl] = useState<string>('');
   
   useEffect(() => {
@@ -44,6 +52,22 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: Pho
 
   if (!photo) return null;
 
+  const currentIndex = photos.findIndex(p => p.id === photo.id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex < photos.length - 1;
+
+  const goToPrevious = () => {
+    if (hasPrevious) {
+      onNavigate(photos[currentIndex - 1].id);
+    }
+  };
+
+  const goToNext = () => {
+    if (hasNext) {
+      onNavigate(photos[currentIndex + 1].id);
+    }
+  };
+
   
 
   return (
@@ -59,7 +83,19 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: Pho
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex justify-center items-center max-h-[70vh] overflow-hidden">
+        <div className="relative flex justify-center items-center max-h-[70vh] overflow-hidden">
+          {/* Bouton précédent */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white"
+            onClick={goToPrevious}
+            disabled={!hasPrevious}
+            style={{ opacity: hasPrevious ? 1 : 0.3 }}
+          >
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+
           <img
             src={imageUrl}
             alt={photo.title || 'Photo'}
@@ -68,6 +104,23 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle }: Pho
               console.error('Erreur de chargement de l\'image:', imageUrl);
             }}
           />
+
+          {/* Bouton suivant */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-black/20 hover:bg-black/40 text-white"
+            onClick={goToNext}
+            disabled={!hasNext}
+            style={{ opacity: hasNext ? 1 : 0.3 }}
+          >
+            <ChevronRight className="h-6 w-6" />
+          </Button>
+
+          {/* Indicateur de position */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+            {currentIndex + 1} / {photos.length}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

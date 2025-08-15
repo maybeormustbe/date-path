@@ -217,10 +217,10 @@ export default function DayView() {
               </Button>
               <div>
                 <h1 className="text-xl font-bold">
-                  {album.title} - {dayEntry.title || `Jour du ${dayEntry.date}`}
+                  {album.title} - {dayEntry.title || 'Sans titre'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {dayEntry.date} • {photos.length} photo{photos.length !== 1 ? 's' : ''}
+                  {dayEntry.location_name ? `${dayEntry.location_name} - ` : ''}{new Date(dayEntry.date).toLocaleDateString('fr-FR')} - {photos.length} photo{photos.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>

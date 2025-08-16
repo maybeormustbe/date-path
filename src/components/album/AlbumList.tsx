@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Plus, Calendar, MapPin, MoreVertical, Edit, Trash, LogOut, Camera } from 'lucide-react';
+import { Plus, Calendar, MapPin, MoreVertical, Edit, Trash, LogOut, Camera, Heart } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -189,6 +189,15 @@ export function AlbumList() {
               </div>
             </div>
             <div className="flex items-center gap-4">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/memories')}
+                className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-pink-500/20 hover:from-pink-500/20 hover:to-purple-500/20"
+              >
+                <Heart className="h-4 w-4 mr-2" />
+                Souvenirs
+              </Button>
+              
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-sky hover:opacity-90">

@@ -8,6 +8,7 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { AlbumList } from "@/components/album/AlbumList";
 import AlbumView from "./pages/AlbumView";
 import DayView from "./pages/DayView";
+import Memories from "./pages/Memories";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,11 @@ const App = () => (
             <Route path="/album/:albumId/day/:dayId" element={
               <ProtectedRoute>
                 <DayView />
+              </ProtectedRoute>
+            } />
+            <Route path="/memories" element={
+              <ProtectedRoute>
+                <Memories />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

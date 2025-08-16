@@ -31,6 +31,7 @@ export default function Memories() {
     if (!user) return;
 
     try {
+      // Récupérer toutes les photos de l'utilisateur avec les informations d'album et de jour
       const { data, error } = await supabase
         .from('photos')
         .select(`
@@ -39,11 +40,13 @@ export default function Memories() {
           file_path,
           taken_at,
           location_name,
+          album_id,
           albums!inner(title),
           day_entries!inner(title, date)
         `)
         .eq('albums.user_id', user.id)
-        .order('taken_at', { ascending: false });
+        .order('taken_at', { ascending: false })
+        .limit(1000); // Limite élevée pour récupérer toutes les photos
 
       if (error) throw error;
 

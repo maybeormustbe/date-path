@@ -97,7 +97,7 @@ export default function Memories() {
 
     const interval = setInterval(() => {
       setCurrentPhotoIndex((prev) => (prev + 1) % photos.length);
-    }, 5000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [isPlaying, photos.length]);

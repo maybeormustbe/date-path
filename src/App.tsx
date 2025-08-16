@@ -9,6 +9,7 @@ import { AlbumList } from "@/components/album/AlbumList";
 import AlbumView from "./pages/AlbumView";
 import DayView from "./pages/DayView";
 import Memories from "./pages/Memories";
+import Slideshow from "./pages/Slideshow";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,11 @@ const App = () => (
             <Route path="/album/:albumId/day/:dayId" element={
               <ProtectedRoute>
                 <DayView />
+              </ProtectedRoute>
+            } />
+            <Route path="/album/:albumId/slideshow" element={
+              <ProtectedRoute>
+                <Slideshow />
               </ProtectedRoute>
             } />
             <Route path="/memories" element={

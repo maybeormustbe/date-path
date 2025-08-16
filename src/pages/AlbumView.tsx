@@ -7,7 +7,7 @@ import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Plus, Camera, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -230,10 +230,20 @@ export default function AlbumView() {
                 </p>
               </div>
             </div>
-            <Button onClick={() => setUploadModalOpen(true)} className="bg-gradient-sky hover:opacity-90">
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter des photos
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate(`/album/${albumId}/slideshow`)} 
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Play className="h-4 w-4" />
+                Diaporama
+              </Button>
+              <Button onClick={() => setUploadModalOpen(true)} className="bg-gradient-sky hover:opacity-90">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter des photos
+              </Button>
+            </div>
           </div>
         </div>
       </header>

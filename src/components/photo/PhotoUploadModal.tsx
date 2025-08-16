@@ -46,6 +46,58 @@ export function PhotoUploadModal({
   // Cache pour éviter les requêtes de géolocalisation en double
   const locationCache = new Map<string, string>();
 
+  // Coordonnées par défaut (Nantes, France)
+  const DEFAULT_COORDS = { latitude: 47.2184, longitude: -1.5536 };
+
+  // Fonction pour calculer la distance Haversine entre deux points
+  const calculateHaversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371; // Rayon de la Terre en km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Fonction pour faire du reverse geocoding avec cache
+  const reverseGeocode = async (latitude: number, longitude: number): Promise<string | undefined> => {
+    const coordKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+    
+    if (locationCache.has(coordKey)) {
+      return locationCache.get(coordKey);
+    }
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
+        { 
+          signal: controller.signal,
+          headers: { 'User-Agent': 'PhotoApp/1.0' }
+        }
+      );
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        const locationData = await response.json();
+        if (locationData?.display_name) {
+          const parts = locationData.display_name.split(',');
+          const locationName = parts.slice(0, 2).join(', ').trim();
+          locationCache.set(coordKey, locationName);
+          return locationName;
+        }
+      }
+    } catch (error) {
+      console.warn('Erreur lors de la géolocalisation inverse:', error);
+    }
+    
+    return undefined;
+  };
+
   const processFileMetadata = async (file: File): Promise<PhotoFile['metadata']> => {
     try {
       const exifData = await parse(file);
@@ -57,46 +109,10 @@ export function PhotoUploadModal({
         metadata.date = new Date(dateStr);
       }
 
-      // Extract GPS coordinates
+      // Extract GPS coordinates (sans géolocalisation inverse pour l'instant)
       if (exifData?.latitude && exifData?.longitude) {
         metadata.latitude = parseFloat(exifData.latitude);
         metadata.longitude = parseFloat(exifData.longitude);
-        
-        // Try to get location name using reverse geocoding avec cache et timeout
-        const coordKey = `${metadata.latitude.toFixed(4)},${metadata.longitude.toFixed(4)}`;
-        
-        if (locationCache.has(coordKey)) {
-          metadata.locationName = locationCache.get(coordKey);
-        } else {
-          try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // Timeout de 5s
-            
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${metadata.latitude}&lon=${metadata.longitude}&zoom=14&addressdetails=1`,
-              { 
-                signal: controller.signal,
-                headers: {
-                  'User-Agent': 'PhotoApp/1.0'
-                }
-              }
-            );
-            clearTimeout(timeoutId);
-            
-            if (response.ok) {
-              const locationData = await response.json();
-              
-              if (locationData?.display_name) {
-                const parts = locationData.display_name.split(',');
-                const locationName = parts.slice(0, 2).join(', ').trim();
-                metadata.locationName = locationName;
-                locationCache.set(coordKey, locationName);
-              }
-            }
-          } catch (error) {
-            console.warn('Erreur lors de la géolocalisation inverse:', error);
-          }
-        }
       }
 
       return metadata;
@@ -104,6 +120,132 @@ export function PhotoUploadModal({
       console.warn('Erreur lors de l\'extraction des métadonnées EXIF:', error);
       return {};
     }
+  };
+
+  // Fonction pour appliquer la logique de coordonnées et lieux-dits
+  const applyCoordinatesAndLocationLogic = async (photos: PhotoFile[]) => {
+    // Trier les photos par date
+    const photosWithDate = photos.filter(p => p.metadata?.date).sort((a, b) => 
+      a.metadata!.date!.getTime() - b.metadata!.date!.getTime()
+    );
+
+    if (photosWithDate.length === 0) return photos;
+
+    // Organiser par jour
+    const photosByDay = new Map<string, PhotoFile[]>();
+    photosWithDate.forEach(photo => {
+      const dayKey = photo.metadata!.date!.toISOString().split('T')[0];
+      if (!photosByDay.has(dayKey)) {
+        photosByDay.set(dayKey, []);
+      }
+      photosByDay.get(dayKey)!.push(photo);
+    });
+
+    const sortedDays = Array.from(photosByDay.keys()).sort();
+
+    // A1 - Coordonnées de l'album : première photo avec coordonnées à partir du 2ème jour
+    let albumCoords = DEFAULT_COORDS;
+    if (sortedDays.length >= 2) {
+      for (let dayIndex = 1; dayIndex < sortedDays.length; dayIndex++) {
+        const dayPhotos = photosByDay.get(sortedDays[dayIndex])!;
+        const firstPhotoWithCoords = dayPhotos.find(p => p.metadata?.latitude && p.metadata?.longitude);
+        if (firstPhotoWithCoords) {
+          albumCoords = {
+            latitude: firstPhotoWithCoords.metadata!.latitude!,
+            longitude: firstPhotoWithCoords.metadata!.longitude!
+          };
+          break;
+        }
+      }
+    }
+
+    // A2 - Coordonnées par jour : dernière photo avec coordonnées du jour
+    const dayCoords = new Map<string, { latitude: number; longitude: number }>();
+    sortedDays.forEach(day => {
+      const dayPhotos = photosByDay.get(day)!;
+      const photosWithCoords = dayPhotos.filter(p => p.metadata?.latitude && p.metadata?.longitude);
+      
+      if (photosWithCoords.length > 0) {
+        const lastPhoto = photosWithCoords[photosWithCoords.length - 1];
+        dayCoords.set(day, {
+          latitude: lastPhoto.metadata!.latitude!,
+          longitude: lastPhoto.metadata!.longitude!
+        });
+      } else {
+        dayCoords.set(day, albumCoords);
+      }
+    });
+
+    // A3 - Appliquer coordonnées aux photos qui n'en ont pas
+    photos.forEach(photo => {
+      if (photo.metadata?.date && (!photo.metadata.latitude || !photo.metadata.longitude)) {
+        const dayKey = photo.metadata.date.toISOString().split('T')[0];
+        const coords = dayCoords.get(dayKey) || albumCoords;
+        if (!photo.metadata.latitude) photo.metadata.latitude = coords.latitude;
+        if (!photo.metadata.longitude) photo.metadata.longitude = coords.longitude;
+      }
+    });
+
+    // B - Lieux-dits avec cache pour éviter les doublons
+    const uniqueCoords = new Set<string>();
+    const coordsToResolve: { latitude: number; longitude: number }[] = [];
+
+    // B1 - Coordonnées de l'album
+    const albumCoordsKey = `${albumCoords.latitude.toFixed(4)},${albumCoords.longitude.toFixed(4)}`;
+    uniqueCoords.add(albumCoordsKey);
+    coordsToResolve.push(albumCoords);
+
+    // B2 - Coordonnées de chaque jour
+    dayCoords.forEach(coords => {
+      const coordsKey = `${coords.latitude.toFixed(4)},${coords.longitude.toFixed(4)}`;
+      if (!uniqueCoords.has(coordsKey)) {
+        uniqueCoords.add(coordsKey);
+        coordsToResolve.push(coords);
+      }
+    });
+
+    // Résoudre tous les lieux-dits uniques
+    const locationPromises = coordsToResolve.map(coords => reverseGeocode(coords.latitude, coords.longitude));
+    await Promise.all(locationPromises);
+
+    // B3 & B4 - Appliquer les lieux-dits aux photos
+    const albumLocationName = await reverseGeocode(albumCoords.latitude, albumCoords.longitude);
+    
+    photos.forEach(photo => {
+      if (photo.metadata?.date && photo.metadata.latitude && photo.metadata.longitude) {
+        const dayKey = photo.metadata.date.toISOString().split('T')[0];
+        const dayCoordinate = dayCoords.get(dayKey) || albumCoords;
+        
+        // Calculer la distance avec les coordonnées du jour
+        const distance = calculateHaversineDistance(
+          photo.metadata.latitude,
+          photo.metadata.longitude,
+          dayCoordinate.latitude,
+          dayCoordinate.longitude
+        );
+
+        // B3 - Si distance < 2km, utiliser le lieu-dit du jour
+        if (distance < 2) {
+          const dayLocationName = locationCache.get(`${dayCoordinate.latitude.toFixed(4)},${dayCoordinate.longitude.toFixed(4)}`);
+          if (dayLocationName) {
+            photo.metadata.locationName = dayLocationName;
+          }
+        } else {
+          // B4 - Sinon utiliser le lieu-dit des coordonnées de la photo
+          const photoLocationName = locationCache.get(`${photo.metadata.latitude.toFixed(4)},${photo.metadata.longitude.toFixed(4)}`);
+          if (!photoLocationName) {
+            // Si pas encore en cache, faire la requête
+            reverseGeocode(photo.metadata.latitude, photo.metadata.longitude).then(name => {
+              if (name) photo.metadata!.locationName = name;
+            });
+          } else {
+            photo.metadata.locationName = photoLocationName;
+          }
+        }
+      }
+    });
+
+    return photos;
   };
 
   // Fonction pour traiter les fichiers par batches avec limitation des requêtes simultanées
@@ -137,7 +279,11 @@ export function PhotoUploadModal({
       }
     }
     
-    return results;
+    // Appliquer la logique de coordonnées et lieux-dits
+    const processedResults = await applyCoordinatesAndLocationLogic(results);
+    setFiles(processedResults);
+    
+    return processedResults;
   };
 
   const handleFileSelect = useCallback(async (selectedFiles: FileList) => {

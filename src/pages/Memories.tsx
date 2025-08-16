@@ -31,7 +31,7 @@ export default function Memories() {
     if (!user) return;
 
     try {
-      // Récupérer toutes les photos de l'utilisateur avec les informations d'album et de jour
+      // Récupérer toutes les photos de l'utilisateur
       const { data, error } = await supabase
         .from('photos')
         .select(`
@@ -40,30 +40,47 @@ export default function Memories() {
           file_path,
           taken_at,
           location_name,
-          album_id,
-          albums!inner(title),
-          day_entries!inner(title, date)
+          album_id
         `)
-        .eq('albums.user_id', user.id)
-        .order('taken_at', { ascending: false })
-        .limit(1000); // Limite élevée pour récupérer toutes les photos
+        .eq('user_id', user.id)
+        .order('taken_at', { ascending: false });
 
       if (error) throw error;
 
-      const formattedPhotos: MemoryPhoto[] = data.map(photo => ({
-        id: photo.id,
-        title: photo.title,
-        file_path: photo.file_path,
-        taken_at: photo.taken_at,
-        location_name: photo.location_name,
-        album_title: (photo.albums as any).title,
-        day_title: (photo.day_entries as any).title,
-        date: (photo.day_entries as any).date
-      }));
+      // Ensuite récupérer les informations des albums et day_entries
+      const photosWithDetails = await Promise.all(
+        data.map(async (photo) => {
+          const [albumResult, dayEntryResult] = await Promise.all([
+            supabase
+              .from('albums')
+              .select('title')
+              .eq('id', photo.album_id)
+              .single(),
+            supabase
+              .from('day_entries')
+              .select('title, date')
+              .eq('album_id', photo.album_id)
+              .eq('date', photo.taken_at ? new Date(photo.taken_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
+              .maybeSingle()
+          ]);
+
+          return {
+            id: photo.id,
+            title: photo.title,
+            file_path: photo.file_path,
+            taken_at: photo.taken_at,
+            location_name: photo.location_name,
+            album_title: albumResult.data?.title || 'Album sans titre',
+            day_title: dayEntryResult.data?.title || null,
+            date: dayEntryResult.data?.date || (photo.taken_at ? new Date(photo.taken_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0])
+          };
+        })
+      );
 
       // Mélanger les photos aléatoirement
-      const shuffledPhotos = formattedPhotos.sort(() => Math.random() - 0.5);
+      const shuffledPhotos = photosWithDetails.sort(() => Math.random() - 0.5);
       setPhotos(shuffledPhotos);
+      console.log(`Nombre total de photos chargées: ${shuffledPhotos.length}`);
     } catch (error) {
       console.error('Erreur lors du chargement des photos:', error);
     } finally {

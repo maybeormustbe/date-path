@@ -180,9 +180,30 @@ export function PhotoUploadModal({
     photos.forEach(photo => {
       if (photo.metadata?.date && (!photo.metadata.latitude || !photo.metadata.longitude)) {
         const dayKey = photo.metadata.date.toISOString().split('T')[0];
-        const coords = dayCoords.get(dayKey) || albumCoords;
-        if (!photo.metadata.latitude) photo.metadata.latitude = coords.latitude;
-        if (!photo.metadata.longitude) photo.metadata.longitude = coords.longitude;
+        const dayPhotos = photos.filter(p => p.metadata?.date?.toISOString().split('T')[0] === dayKey);
+        const photosWithCoords = dayPhotos.filter(p => p.metadata?.latitude && p.metadata?.longitude);
+        
+        if (photosWithCoords.length > 0) {
+          // Trouver la photo la plus proche en heure
+          let closestPhoto = photosWithCoords[0];
+          let minTimeDiff = Math.abs(photo.metadata.date.getTime() - closestPhoto.metadata!.date!.getTime());
+          
+          photosWithCoords.forEach(coordPhoto => {
+            const timeDiff = Math.abs(photo.metadata!.date!.getTime() - coordPhoto.metadata!.date!.getTime());
+            if (timeDiff < minTimeDiff) {
+              minTimeDiff = timeDiff;
+              closestPhoto = coordPhoto;
+            }
+          });
+          
+          if (!photo.metadata.latitude) photo.metadata.latitude = closestPhoto.metadata!.latitude!;
+          if (!photo.metadata.longitude) photo.metadata.longitude = closestPhoto.metadata!.longitude!;
+        } else {
+          // Aucune photo du jour n'a de coordonnées, utiliser les coordonnées du jour
+          const coords = dayCoords.get(dayKey) || albumCoords;
+          if (!photo.metadata.latitude) photo.metadata.latitude = coords.latitude;
+          if (!photo.metadata.longitude) photo.metadata.longitude = coords.longitude;
+        }
       }
     });
 
@@ -230,18 +251,8 @@ export function PhotoUploadModal({
           if (dayLocationName) {
             photo.metadata.locationName = dayLocationName;
           }
-        } else {
-          // B4 - Sinon utiliser le lieu-dit des coordonnées de la photo
-          const photoLocationName = locationCache.get(`${photo.metadata.latitude.toFixed(4)},${photo.metadata.longitude.toFixed(4)}`);
-          if (!photoLocationName) {
-            // Si pas encore en cache, faire la requête
-            reverseGeocode(photo.metadata.latitude, photo.metadata.longitude).then(name => {
-              if (name) photo.metadata!.locationName = name;
-            });
-          } else {
-            photo.metadata.locationName = photoLocationName;
-          }
         }
+        // Les autres photos restent sans lieu dit
       }
     });
 

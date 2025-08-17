@@ -2,3 +2,6 @@ project_id = "rkpxhfigmeqicnxfvbyr"
 
 [functions.update-day-titles]
 verify_jwt = false
+
+[functions.update-album-metadata]
+verify_jwt = false

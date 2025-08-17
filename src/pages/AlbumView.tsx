@@ -5,6 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
 import { UpdateDayTitlesButton } from '@/components/admin/UpdateDayTitlesButton';
+import { UpdateAlbumMetadataButton } from '@/components/admin/UpdateAlbumMetadataButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -232,6 +233,7 @@ export default function AlbumView() {
               </div>
             </div>
             <div className="flex gap-2">
+              <UpdateAlbumMetadataButton albumId={albumId!} />
               <UpdateDayTitlesButton />
               <Button 
                 onClick={() => navigate(`/album/${albumId}/slideshow`)} 

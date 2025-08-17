@@ -19,6 +19,7 @@ interface PhotoFile {
     latitude?: number;
     longitude?: number;
     locationName?: string;
+    dayTitle?: string;
   };
 }
 
@@ -256,6 +257,42 @@ export function PhotoUploadModal({
       }
     });
 
+    // Génération des titres de journée après détermination des lieux-dits
+    const dayTitles = new Map<string, string>();
+    const sortedDaysForTitles = Array.from(photosByDay.keys()).sort();
+    
+    const frenchDays = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+    const frenchMonths = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
+                         'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    
+    sortedDaysForTitles.forEach((day, index) => {
+      const date = new Date(day + 'T00:00:00');
+      const dayNumber = index + 1;
+      const weekDay = frenchDays[date.getDay()];
+      const dayOfMonth = date.getDate();
+      const month = frenchMonths[date.getMonth()];
+      
+      // Récupérer le lieu-dit du jour
+      const dayCoordinate = dayCoords.get(day) || albumCoords;
+      const locationName = locationCache.get(`${dayCoordinate.latitude.toFixed(4)},${dayCoordinate.longitude.toFixed(4)}`) || '';
+      
+      // Format: "J1, lundi 12 juillet, La Hautière, les rochelets"
+      // Pour l'instant on ne sait pas ce que sont "les rochelets", donc on met juste le lieu
+      const title = `J${dayNumber}, ${weekDay} ${dayOfMonth} ${month}, ${locationName}`;
+      dayTitles.set(day, title);
+    });
+
+    // Stocker les titres dans les métadonnées des photos pour utilisation ultérieure
+    photos.forEach(photo => {
+      if (photo.metadata?.date) {
+        const dayKey = photo.metadata.date.toISOString().split('T')[0];
+        const title = dayTitles.get(dayKey);
+        if (title) {
+          photo.metadata.dayTitle = title;
+        }
+      }
+    });
+
     return photos;
   };
 
@@ -419,7 +456,7 @@ export function PhotoUploadModal({
                 album_id: albumId,
                 user_id: user.id,
                 date: photoDate,
-                title: photoFile.metadata.locationName || `Photos du ${new Date(photoDate).toLocaleDateString('fr-FR')}`,
+                title: photoFile.metadata.dayTitle || photoFile.metadata.locationName || `Photos du ${new Date(photoDate).toLocaleDateString('fr-FR')}`,
                 latitude: photoFile.metadata.latitude,
                 longitude: photoFile.metadata.longitude,
                 location_name: photoFile.metadata.locationName,

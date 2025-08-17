@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
+import { UpdateDayTitlesButton } from '@/components/admin/UpdateDayTitlesButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -231,6 +232,7 @@ export default function AlbumView() {
               </div>
             </div>
             <div className="flex gap-2">
+              <UpdateDayTitlesButton />
               <Button 
                 onClick={() => navigate(`/album/${albumId}/slideshow`)} 
                 variant="outline"

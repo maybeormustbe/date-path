@@ -1,1 +1,4 @@
 project_id = "rkpxhfigmeqicnxfvbyr"
+
+[functions.update-day-titles]
+verify_jwt = false

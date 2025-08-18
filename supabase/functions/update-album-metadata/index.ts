@@ -23,13 +23,12 @@ const reverseGeocode = async (latitude: number, longitude: number): Promise<stri
   const coordKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
   
   if (locationCache.has(coordKey)) {
+    console.log(`Cache hit for ${coordKey}: ${locationCache.get(coordKey)}`);
     return locationCache.get(coordKey);
   }
   
   try {
-    const timeoutId = setTimeout(() => {
-      throw new Error('Timeout');
-    }, 5000);
+    console.log(`Géolocalisation inverse pour ${coordKey}...`);
     
     const response = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
@@ -37,19 +36,25 @@ const reverseGeocode = async (latitude: number, longitude: number): Promise<stri
         headers: { 'User-Agent': 'PhotoApp/1.0' }
       }
     );
-    clearTimeout(timeoutId);
     
     if (response.ok) {
       const locationData = await response.json();
+      console.log(`Réponse API pour ${coordKey}:`, locationData?.display_name);
+      
       if (locationData?.display_name) {
         const parts = locationData.display_name.split(',');
         const locationName = parts.slice(0, 2).join(', ').trim();
+        console.log(`Location name extrait: ${locationName}`);
         locationCache.set(coordKey, locationName);
         return locationName;
+      } else {
+        console.log(`Pas de display_name pour ${coordKey}`);
       }
+    } else {
+      console.log(`Erreur HTTP ${response.status} pour ${coordKey}`);
     }
   } catch (error) {
-    console.warn('Erreur lors de la géolocalisation inverse:', error);
+    console.error('Erreur lors de la géolocalisation inverse:', error);
   }
   
   return undefined;
@@ -277,11 +282,11 @@ Deno.serve(async (req) => {
 
     // Effectuer les mises à jour par batch
     console.log(`Mise à jour de ${photoUpdates.length} photos`);
-    const batchSize = 10;
+    const photoBatchSize = 10;
     let updatedCount = 0;
 
-    for (let i = 0; i < photoUpdates.length; i += batchSize) {
-      const batch = photoUpdates.slice(i, i + batchSize);
+    for (let i = 0; i < photoUpdates.length; i += photoBatchSize) {
+      const batch = photoUpdates.slice(i, i + photoBatchSize);
       
       const updatePromises = batch.map(async (update) => {
         const updateData: any = {
@@ -309,7 +314,7 @@ Deno.serve(async (req) => {
       updatedCount += results.filter(r => r).length;
       
       // Petit délai entre les batches
-      if (i + batchSize < photoUpdates.length) {
+      if (i + photoBatchSize < photoUpdates.length) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
@@ -328,6 +333,7 @@ Deno.serve(async (req) => {
     }
 
     // Mettre à jour les day_entries
+    console.log(`Mise à jour de ${dayEntryUpdates.length} day_entries`);
     let dayEntriesUpdated = 0;
     for (const update of dayEntryUpdates) {
       const updateData: any = {
@@ -337,6 +343,9 @@ Deno.serve(async (req) => {
       
       if (update.location_name) {
         updateData.location_name = update.location_name;
+        console.log(`Mise à jour day_entry ${update.date} avec location: ${update.location_name}`);
+      } else {
+        console.log(`Mise à jour day_entry ${update.date} sans location (coords: ${update.latitude}, ${update.longitude})`);
       }
 
       const { error } = await supabaseClient
@@ -347,6 +356,8 @@ Deno.serve(async (req) => {
       
       if (!error) {
         dayEntriesUpdated++;
+      } else {
+        console.error(`Erreur mise à jour day_entry ${update.date}:`, error);
       }
     }
 

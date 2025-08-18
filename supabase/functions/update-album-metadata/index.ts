@@ -234,10 +234,21 @@ Deno.serve(async (req) => {
       }
     });
 
-    // Résoudre tous les lieux-dits uniques
+    // Résoudre tous les lieux-dits uniques avec limite
     console.log(`Résolution de ${coordsToResolve.length} lieux-dits uniques`);
-    const locationPromises = coordsToResolve.map(coords => reverseGeocode(coords.latitude, coords.longitude));
-    await Promise.all(locationPromises);
+    
+    // Traiter par petits batches pour éviter les timeouts
+    const batchSize = 3;
+    for (let i = 0; i < coordsToResolve.length; i += batchSize) {
+      const batch = coordsToResolve.slice(i, i + batchSize);
+      const locationPromises = batch.map(coords => reverseGeocode(coords.latitude, coords.longitude));
+      await Promise.all(locationPromises);
+      
+      // Petite pause entre les batches
+      if (i + batchSize < coordsToResolve.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     // B3 - Appliquer les lieux-dits aux photos
     for (const update of photoUpdates) {

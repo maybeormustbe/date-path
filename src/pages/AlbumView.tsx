@@ -300,71 +300,23 @@ export default function AlbumView() {
                           
                           {/* Contenu texte */}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-1">
-                              {editingDayId === day.id ? (
-                                <div className="flex items-center gap-1 flex-1">
-                                  <Input
-                                    value={editingTitle}
-                                    onChange={(e) => setEditingTitle(e.target.value)}
-                                    className="h-6 text-xs px-1 flex-1"
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') saveTitle(day.id);
-                                      if (e.key === 'Escape') cancelEditing();
-                                    }}
-                                    autoFocus
-                                  />
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => saveTitle(day.id)}
-                                  >
-                                    <Check className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="h-6 w-6 p-0"
-                                    onClick={cancelEditing}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-medium text-sm">
-                                      {day.title || `Jour ${index + 1}`}
-                                    </h4>
-                                    {!day.id.startsWith('placeholder-') && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          startEditingTitle(day, index);
-                                        }}
-                                      >
-                                        <Edit2 className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                  {!day.id.startsWith('placeholder-') && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 px-2 text-xs"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/album/${albumId}/day/${day.id}`);
-                                      }}
-                                    >
-                                      Voir
-                                    </Button>
-                                  )}
-                                </>
-                              )}
+                             <div className="flex items-center justify-between mb-1">
+                               <h4 className="font-medium text-sm">
+                                 {day.title || `Jour ${index + 1}`}
+                               </h4>
+                               {!day.id.startsWith('placeholder-') && (
+                                 <Button
+                                   size="sm"
+                                   variant="ghost"
+                                   className="h-6 px-2 text-xs"
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     navigate(`/album/${albumId}/day/${day.id}`);
+                                   }}
+                                 >
+                                   Voir
+                                 </Button>
+                               )}
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p>{day.date}</p>

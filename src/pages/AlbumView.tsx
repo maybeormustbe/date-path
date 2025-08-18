@@ -9,7 +9,7 @@ import { UpdateAlbumMetadataButton } from '@/components/admin/UpdateAlbumMetadat
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play } from 'lucide-react';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -235,6 +235,14 @@ export default function AlbumView() {
             <div className="flex gap-2">
               <UpdateAlbumMetadataButton albumId={albumId!} />
               <UpdateDayTitlesButton />
+              <Button 
+                onClick={() => navigate(`/album/${albumId}/print`)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimer
+              </Button>
               <Button 
                 onClick={() => navigate(`/album/${albumId}/slideshow`)} 
                 variant="outline"

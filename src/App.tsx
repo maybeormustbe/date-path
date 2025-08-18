@@ -8,6 +8,7 @@ import { AuthPage } from "@/components/auth/AuthPage";
 import { AlbumList } from "@/components/album/AlbumList";
 import AlbumView from "./pages/AlbumView";
 import DayView from "./pages/DayView";
+import AlbumPrint from './pages/AlbumPrint';
 import Memories from "./pages/Memories";
 import Slideshow from "./pages/Slideshow";
 import NotFound from "./pages/NotFound";
@@ -50,6 +51,11 @@ const App = () => (
             <Route path="/album/:albumId/day/:dayId" element={
               <ProtectedRoute>
                 <DayView />
+              </ProtectedRoute>
+            } />
+            <Route path="/album/:albumId/print" element={
+              <ProtectedRoute>
+                <AlbumPrint />
               </ProtectedRoute>
             } />
             <Route path="/album/:albumId/slideshow" element={

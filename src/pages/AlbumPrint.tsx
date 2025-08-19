@@ -25,6 +25,11 @@ interface DayEntry {
     file_path: string;
     title: string;
   };
+  favorite_photos: {
+    id: string;
+    file_path: string;
+    title: string | null;
+  }[];
 }
 
 export default function AlbumPrint() {
@@ -83,12 +88,32 @@ export default function AlbumPrint() {
 
       if (descError) throw descError;
 
-      // Merge descriptions
+      // Fetch favorite photos for each day
+      const dayIds = daysWithContent.map((day: any) => day.id);
+      const { data: favoritePhotos, error: favError } = await supabase
+        .from('photos')
+        .select('id, file_path, title, taken_at')
+        .eq('album_id', albumId)
+        .eq('is_favorite', true)
+        .order('taken_at');
+
+      if (favError) throw favError;
+
+      // Merge descriptions and favorite photos
       const daysWithDescriptions = daysWithContent.map((day: any) => {
         const dayDesc = dayDescriptions?.find(d => d.id === day.id);
+        
+        // Get favorite photos for this day by filtering by date
+        const dayFavorites = (favoritePhotos || []).filter(photo => {
+          if (!photo.taken_at) return false;
+          const photoDate = photo.taken_at.split('T')[0];
+          return photoDate === day.date;
+        });
+
         return {
           ...day,
-          description: dayDesc?.description || null
+          description: dayDesc?.description || null,
+          favorite_photos: dayFavorites
         };
       });
 
@@ -186,6 +211,27 @@ export default function AlbumPrint() {
                       alt={day.cover_photo.title || 'Photo du jour'}
                       className="photo-img"
                     />
+                  </div>
+                )}
+
+                {/* Favorite photos */}
+                {day.favorite_photos && day.favorite_photos.length > 0 && (
+                  <div className="favorite-photos">
+                    <h3 className="favorite-photos-title">Photos favorites</h3>
+                    <div className="favorite-photos-grid">
+                      {day.favorite_photos.map((photo) => (
+                        <div key={photo.id} className="favorite-photo-item">
+                          <img
+                            src={supabase.storage.from('photos').getPublicUrl(photo.file_path).data.publicUrl}
+                            alt={photo.title || 'Photo favorite'}
+                            className="favorite-photo-img"
+                          />
+                          {photo.title && (
+                            <p className="favorite-photo-title">{photo.title}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
 
@@ -309,6 +355,44 @@ export default function AlbumPrint() {
             line-height: 1.6;
             color: #374151;
             text-align: justify;
+          }
+
+          .favorite-photos {
+            margin: 1.5rem 0;
+          }
+
+          .favorite-photos-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #374151;
+          }
+
+          .favorite-photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+          }
+
+          .favorite-photo-item {
+            text-align: center;
+          }
+
+          .favorite-photo-img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+          }
+
+          .favorite-photo-title {
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            color: #6b7280;
+            line-height: 1.2;
+            word-break: break-word;
           }
 
           @media screen {

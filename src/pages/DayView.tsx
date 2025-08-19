@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { ArrowLeft, MapPin, Save, Star } from 'lucide-react';
+import { ArrowLeft, MapPin, Save, Star, Binoculars } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Album {
@@ -338,6 +338,18 @@ export default function DayView() {
                             <Star 
                               className={`h-4 w-4 ${photo.is_favorite ? 'text-blue-500 fill-blue-500' : 'text-muted-foreground'}`}
                             />
+                          </Button>
+                        </div>
+                        
+                        {/* View Photo Button */}
+                        <div className="flex-shrink-0 mr-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setModalPhoto(photo)}
+                          >
+                            <Binoculars className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         </div>
                         

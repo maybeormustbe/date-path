@@ -9,7 +9,7 @@ import { UpdateAlbumMetadataButton } from '@/components/admin/UpdateAlbumMetadat
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -312,19 +312,19 @@ export default function AlbumView() {
                                <h4 className="font-medium text-sm">
                                  {day.title || `Jour ${index + 1}`}
                                </h4>
-                               {!day.id.startsWith('placeholder-') && (
-                                 <Button
-                                   size="sm"
-                                   variant="ghost"
-                                   className="h-6 px-2 text-xs"
-                                   onClick={(e) => {
-                                     e.stopPropagation();
-                                     navigate(`/album/${albumId}/day/${day.id}`);
-                                   }}
-                                 >
-                                   Voir
-                                 </Button>
-                               )}
+                                {!day.id.startsWith('placeholder-') && (
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/album/${albumId}/day/${day.id}`);
+                                    }}
+                                  >
+                                    <Binoculars className="h-4 w-4" />
+                                  </Button>
+                                )}
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p>{day.date}</p>

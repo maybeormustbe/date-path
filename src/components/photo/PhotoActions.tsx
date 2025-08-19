@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, Edit2, Trash2, Eye, Image, Check, X } from 'lucide-react';
+import { MoreVertical, Edit2, Trash2, Image, Check, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -16,7 +16,6 @@ interface PhotoActionsProps {
   };
   onPhotoUpdated: () => void;
   onPhotoDeleted: () => void;
-  onViewPhoto: () => void;
   onSetAsCover: () => void;
   isEditingTitle?: boolean;
   editingTitle?: string;
@@ -30,7 +29,6 @@ export const PhotoActions = ({
   photo, 
   onPhotoUpdated, 
   onPhotoDeleted, 
-  onViewPhoto, 
   onSetAsCover,
   isEditingTitle = false,
   editingTitle = '',
@@ -120,10 +118,6 @@ export const PhotoActions = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="z-[9999] bg-background">
-            <DropdownMenuItem onClick={onViewPhoto}>
-              <Eye className="h-4 w-4 mr-2" />
-              Voir en grand
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={onSetAsCover}>
               <Image className="h-4 w-4 mr-2" />
               Miniature du jour

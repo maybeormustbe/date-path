@@ -359,7 +359,6 @@ export default function DayView() {
                             photo={photo}
                             onPhotoUpdated={fetchData}
                             onPhotoDeleted={fetchData}
-                            onViewPhoto={() => setModalPhoto(photo)}
                             onSetAsCover={() => handleSetAsCover(photo.id)}
                             isEditingTitle={editingPhotoId === photo.id}
                             editingTitle={editingPhotoTitle}

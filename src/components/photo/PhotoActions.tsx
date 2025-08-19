@@ -12,6 +12,7 @@ interface PhotoActionsProps {
     id: string;
     title: string | null;
     file_path: string;
+    is_favorite: boolean;
   };
   onPhotoUpdated: () => void;
   onPhotoDeleted: () => void;

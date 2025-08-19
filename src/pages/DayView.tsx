@@ -37,6 +37,7 @@ interface Photo {
   latitude: number | null;
   longitude: number | null;
   taken_at: string | null;
+  is_favorite: boolean;
 }
 
 export default function DayView() {
@@ -169,6 +170,23 @@ export default function DayView() {
   const cancelEditingPhotoTitle = () => {
     setEditingPhotoId(undefined);
     setEditingPhotoTitle('');
+  };
+
+  const toggleFavorite = async (photoId: string, currentFavoriteStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('photos')
+        .update({ is_favorite: !currentFavoriteStatus })
+        .eq('id', photoId);
+
+      if (error) throw error;
+      
+      toast.success(!currentFavoriteStatus ? 'Photo ajoutée aux favoris' : 'Photo retirée des favoris');
+      fetchData();
+    } catch (error) {
+      console.error('Erreur lors de la modification des favoris:', error);
+      toast.error('Erreur lors de la modification');
+    }
   };
 
   const mapLocations = useMemo(() => 
@@ -307,6 +325,20 @@ export default function DayView() {
                               })}</p>
                             )}
                           </div>
+                        </div>
+                        
+                        {/* Favorite Star */}
+                        <div className="flex-shrink-0 mr-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => toggleFavorite(photo.id, photo.is_favorite)}
+                          >
+                            <Star 
+                              className={`h-4 w-4 ${photo.is_favorite ? 'text-blue-500 fill-blue-500' : 'text-muted-foreground'}`}
+                            />
+                          </Button>
                         </div>
                         
                         {/* Actions */}

@@ -115,6 +115,7 @@ export type Database = {
           file_size: number | null
           filename: string
           id: string
+          is_favorite: boolean
           latitude: number | null
           location_name: string | null
           longitude: number | null
@@ -132,6 +133,7 @@ export type Database = {
           file_size?: number | null
           filename: string
           id?: string
+          is_favorite?: boolean
           latitude?: number | null
           location_name?: string | null
           longitude?: number | null
@@ -149,6 +151,7 @@ export type Database = {
           file_size?: number | null
           filename?: string
           id?: string
+          is_favorite?: boolean
           latitude?: number | null
           location_name?: string | null
           longitude?: number | null

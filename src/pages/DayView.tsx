@@ -126,14 +126,49 @@ export default function DayView() {
 
   const handleSetAsCover = async (photoId: string) => {
     try {
+      // Find the selected photo to get its coordinates and location
+      const selectedPhoto = photos.find(photo => photo.id === photoId);
+      
+      const updateData: any = { cover_photo_id: photoId };
+      
+      // If the photo has coordinates, update the day's position and location
+      if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
+        updateData.latitude = selectedPhoto.latitude;
+        updateData.longitude = selectedPhoto.longitude;
+        
+        // If the photo has a location name, also update the day's title
+        if (selectedPhoto.location_name) {
+          updateData.location_name = selectedPhoto.location_name;
+          
+          // Generate a new title based on the date and location
+          if (dayEntry?.date) {
+            const date = new Date(dayEntry.date);
+            const dayNumber = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
+            const weekDay = date.toLocaleDateString('fr-FR', { weekday: 'long' });
+            const dayOfMonth = date.getDate();
+            const month = date.toLocaleDateString('fr-FR', { month: 'long' });
+            
+            updateData.title = `J${dayNumber}, ${weekDay} ${dayOfMonth} ${month}, ${selectedPhoto.location_name}`;
+          }
+        }
+      }
+
       const { error } = await supabase
         .from('day_entries')
-        .update({ cover_photo_id: photoId })
+        .update(updateData)
         .eq('id', dayId);
 
       if (error) throw error;
       
-      toast.success('Photo définie comme miniature du jour');
+      let message = 'Photo définie comme miniature du jour';
+      if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
+        message += ' et position mise à jour';
+        if (selectedPhoto.location_name) {
+          message += ' avec nouveau titre';
+        }
+      }
+      
+      toast.success(message);
       fetchData(); // Refresh data
     } catch (error) {
       console.error('Erreur lors de la définition de la miniature:', error);

@@ -128,19 +128,16 @@ export default function DayView() {
     try {
       // Find the selected photo to get its coordinates and location
       const selectedPhoto = photos.find(photo => photo.id === photoId);
-      console.log('Selected photo for cover:', selectedPhoto);
       
       const updateData: any = { cover_photo_id: photoId };
       
-      // If the photo has coordinates, update the day's position and location
+      // If the photo has coordinates, update the day's position
       if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
-        console.log('Photo has coordinates:', selectedPhoto.latitude, selectedPhoto.longitude);
         updateData.latitude = selectedPhoto.latitude;
         updateData.longitude = selectedPhoto.longitude;
         
-        // If the photo has a location name, also update the day's title
+        // If the photo has a location name, also update it and generate new title
         if (selectedPhoto.location_name) {
-          console.log('Photo has location name:', selectedPhoto.location_name);
           updateData.location_name = selectedPhoto.location_name;
           
           // Generate a new title based on the date and location
@@ -152,16 +149,9 @@ export default function DayView() {
             const month = date.toLocaleDateString('fr-FR', { month: 'long' });
             
             updateData.title = `J${dayNumber}, ${weekDay} ${dayOfMonth} ${month}, ${selectedPhoto.location_name}`;
-            console.log('Generated new title:', updateData.title);
           }
-        } else {
-          console.log('Photo has no location name');
         }
-      } else {
-        console.log('Photo has no coordinates');
       }
-      
-      console.log('Update data to send:', updateData);
 
       const { error } = await supabase
         .from('day_entries')

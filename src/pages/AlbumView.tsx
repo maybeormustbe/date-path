@@ -4,12 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
-import { UpdateDayTitlesButton } from '@/components/admin/UpdateDayTitlesButton';
-import { UpdateAlbumMetadataButton } from '@/components/admin/UpdateAlbumMetadataButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars, Settings, MapPin, Type } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -48,6 +47,8 @@ export default function AlbumView() {
   const [selectedDayId, setSelectedDayId] = useState<string>();
   const [editingDayId, setEditingDayId] = useState<string>();
   const [editingTitle, setEditingTitle] = useState('');
+  const [isUpdatingMetadata, setIsUpdatingMetadata] = useState(false);
+  const [isUpdatingTitles, setIsUpdatingTitles] = useState(false);
 
   useEffect(() => {
     if (albumId && user) {
@@ -180,6 +181,62 @@ export default function AlbumView() {
     setEditingTitle('');
   };
 
+  const handleUpdateMetadata = async () => {
+    setIsUpdatingMetadata(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('update-album-metadata', {
+        body: { albumId }
+      });
+
+      if (error) {
+        console.error('Erreur lors de la mise à jour des métadonnées:', error);
+        toast.error('Impossible de mettre à jour les métadonnées de l\'album');
+        return;
+      }
+
+      toast.success(`${data.photosUpdated} photos et ${data.dayEntriesUpdated} journées mises à jour`);
+
+      // Recharger la page pour voir les changements
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Une erreur inattendue s\'est produite');
+    } finally {
+      setIsUpdatingMetadata(false);
+    }
+  };
+
+  const handleUpdateTitles = async () => {
+    setIsUpdatingTitles(true);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('update-day-titles', {
+        body: {}
+      });
+
+      if (error) {
+        console.error('Erreur lors de la mise à jour des titres:', error);
+        toast.error('Impossible de mettre à jour les titres des journées');
+        return;
+      }
+
+      toast.success(data.message || 'Titres des journées mis à jour avec succès');
+
+      // Recharger la page pour voir les changements
+      window.location.reload();
+
+    } catch (error) {
+      console.error('Erreur:', error);
+      toast.error('Une erreur inattendue s\'est produite');
+    } finally {
+      setIsUpdatingTitles(false);
+    }
+  };
+
   const mapLocations = dayEntries
     .filter(day => day.latitude && day.longitude && !day.id.startsWith('placeholder-'))
     .map((day, index) => {
@@ -232,30 +289,36 @@ export default function AlbumView() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-2">
-              <UpdateAlbumMetadataButton albumId={albumId!} />
-              <UpdateDayTitlesButton />
-              <Button 
-                onClick={() => navigate(`/album/${albumId}/print`)}
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Printer className="h-4 w-4" />
-                Imprimer
-              </Button>
-              <Button 
-                onClick={() => navigate(`/album/${albumId}/slideshow`)} 
-                variant="outline"
-                className="flex items-center gap-2"
-              >
-                <Play className="h-4 w-4" />
-                Diaporama
-              </Button>
-              <Button onClick={() => setUploadModalOpen(true)} className="bg-gradient-sky hover:opacity-90">
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter des photos
-              </Button>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Actions
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 z-[9999] bg-background">
+                <DropdownMenuItem onClick={handleUpdateMetadata} disabled={isUpdatingMetadata}>
+                  <MapPin className="h-4 w-4 mr-2" />
+                  Mettre à jour les lieux
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleUpdateTitles} disabled={isUpdatingTitles}>
+                  <Type className="h-4 w-4 mr-2" />
+                  Mettre à jour les titres
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/album/${albumId}/print`)}>
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimer
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate(`/album/${albumId}/slideshow`)}>
+                  <Play className="h-4 w-4 mr-2" />
+                  Diaporama
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setUploadModalOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Ajouter des photos
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>

@@ -5,10 +5,12 @@
   "main": "export-supabase-data.js",
   "scripts": {
     "export": "node export-supabase-data.js",
-    "install-deps": "npm install @supabase/supabase-js"
+    "import": "node import-to-firebase.js",
+    "install-deps": "npm install @supabase/supabase-js firebase-admin"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.55.0"
+    "@supabase/supabase-js": "^2.55.0",
+    "firebase-admin": "^12.0.0"
   },
   "author": "",
   "license": "MIT"

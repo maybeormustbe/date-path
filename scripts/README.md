@@ -5,7 +5,8 @@ Ce dossier contient les scripts nécessaires pour migrer vos données de Supabas
 ## 📋 Prérequis
 
 - Node.js installé sur votre machine
-- Accès aux données Supabase (les clés sont déjà configurées dans le script)
+- Accès aux données Supabase (les clés sont déjà configurées dans le script d'export)
+- Projet Firebase configuré (pour l'import)
 
 ## 🚀 Utilisation
 
@@ -13,19 +14,33 @@ Ce dossier contient les scripts nécessaires pour migrer vos données de Supabas
 
 ```bash
 cd scripts
-npm install @supabase/supabase-js
+npm run install-deps
 ```
 
 ### 2. Export des données Supabase
 
 ```bash
-npm run export
+./run-export.sh
 # ou directement
-node export-supabase-data.js
+npm run export
+```
+
+### 3. Import vers Firebase
+
+**Prérequis pour l'import :**
+1. Créez un projet Firebase
+2. Téléchargez la clé de service account depuis Firebase Console → Project Settings → Service accounts
+3. Renommez le fichier en `firebase-service-account.json` et placez-le dans ce dossier
+
+```bash
+./run-import.sh
+# ou directement  
+npm run import
 ```
 
 ## 📁 Fichiers générés
 
+### Export Supabase
 Le script créera un dossier `supabase-export/` avec les fichiers suivants :
 
 - **albums.json** - Tous vos albums
@@ -33,6 +48,13 @@ Le script créera un dossier `supabase-export/` avec les fichiers suivants :
 - **photos.json** - Toutes les métadonnées de photos
 - **storage-info.json** - Informations sur les buckets et fichiers
 - **migration-report.json** - Rapport détaillé de migration
+
+### Import Firebase
+Le script d'import générera :
+
+- **firestore.rules** - Règles de sécurité Firestore
+- **storage.rules** - Règles de sécurité Storage
+- **firebase-import-summary.json** - Résumé de l'import
 
 ## 🔄 Structure de données
 
@@ -104,13 +126,17 @@ Le fichier `migration-report.json` contient :
 
 ## 📞 Prochaines étapes
 
-1. ✅ Export Supabase (ce script)
-2. 🔄 Création du projet Firebase
-3. 🔄 Script d'import Firebase 
-4. 🔄 Migration du code React
+1. ✅ Export Supabase (`./run-export.sh`)
+2. ✅ Script d'import Firebase (`./run-import.sh`)
+3. 🔄 Configuration Firebase dans l'app React
+4. 🔄 Migration du code (Auth, Firestore, Storage)
 5. 🔄 Tests et validation
 6. 🔄 Mise en production
 
 ---
 
-**Note** : Ce script exporte uniquement les métadonnées. Les fichiers images devront être transférés séparément du storage Supabase vers Firebase Storage.
+**Notes importantes :**
+- Les règles de sécurité seront générées automatiquement
+- Les fichiers images doivent être migrés manuellement du storage Supabase vers Firebase Storage
+- Organisez les fichiers par userId : `/photos/{userId}/` et `/thumbnails/{userId}/`
+- Déployez les règles avec : `firebase deploy --only firestore:rules storage`

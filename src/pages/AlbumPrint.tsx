@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { PhotoMap } from '@/components/map/PhotoMap';
 
 interface Album {
   id: string;
@@ -38,6 +39,8 @@ export default function AlbumPrint() {
   const { user } = useAuth();
   const [album, setAlbum] = useState<Album | null>(null);
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
+  const [allFavoritePhotos, setAllFavoritePhotos] = useState<any[]>([]);
+  const [mapLocations, setMapLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -88,16 +91,32 @@ export default function AlbumPrint() {
 
       if (descError) throw descError;
 
-      // Fetch favorite photos for each day
-      const dayIds = daysWithContent.map((day: any) => day.id);
+      // Fetch all favorite photos for the album
       const { data: favoritePhotos, error: favError } = await supabase
         .from('photos')
-        .select('id, file_path, title, taken_at')
+        .select('id, file_path, title, taken_at, latitude, longitude')
         .eq('album_id', albumId)
         .eq('is_favorite', true)
         .order('taken_at');
 
       if (favError) throw favError;
+      
+      // Store all favorite photos and create map locations
+      setAllFavoritePhotos(favoritePhotos || []);
+      
+      const locations = (favoritePhotos || [])
+        .filter(photo => photo.latitude && photo.longitude)
+        .map(photo => ({
+          id: photo.id,
+          lat: parseFloat(photo.latitude.toString()),
+          lng: parseFloat(photo.longitude.toString()),
+          title: photo.title || 'Photo',
+          date: photo.taken_at,
+          photoCount: 1,
+          isSelected: false
+        }));
+      
+      setMapLocations(locations);
 
       // Merge descriptions and favorite photos
       const daysWithDescriptions = daysWithContent.map((day: any) => {
@@ -128,6 +147,13 @@ export default function AlbumPrint() {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  // Function to get 9 random favorite photos for the cover mosaic
+  const getRandomFavoritePhotos = (photos: any[], count: number = 9) => {
+    if (photos.length <= count) return photos;
+    const shuffled = [...photos].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, count);
   };
 
   if (loading) {
@@ -179,12 +205,45 @@ export default function AlbumPrint() {
       <div className="print-container">
         {/* Album title page */}
         <div className="album-title-page">
-          <div className="text-center">
-            <h1 className="album-main-title">{album.title}</h1>
-            {album.description && (
-              <p className="album-description">{album.description}</p>
+          <div className="cover-content">
+            <div className="text-center">
+              <h1 className="album-main-title">{album.title}</h1>
+              {album.description && (
+                <p className="album-description">{album.description}</p>
+              )}
+              <p className="album-date">{album.month}/{album.year}</p>
+            </div>
+            
+            {/* Photo mosaic */}
+            {allFavoritePhotos.length > 0 && (
+              <div className="photo-mosaic">
+                <div className="mosaic-grid">
+                  {getRandomFavoritePhotos(allFavoritePhotos).map((photo, index) => (
+                    <div key={photo.id} className={`mosaic-item mosaic-item-${index + 1}`}>
+                      <img
+                        src={supabase.storage.from('photos').getPublicUrl(photo.file_path).data.publicUrl}
+                        alt={photo.title || 'Photo favorite'}
+                        className="mosaic-photo"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-            <p className="album-date">{album.month}/{album.year}</p>
+            
+            {/* Mini map */}
+            {mapLocations.length > 0 && (
+              <div className="mini-map-container">
+                <h3 className="mini-map-title">Lieux visités</h3>
+                <div className="mini-map">
+                  <PhotoMap
+                    locations={mapLocations}
+                    selectedLocationId={null}
+                    onLocationClick={() => {}}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -272,6 +331,73 @@ export default function AlbumPrint() {
             align-items: center;
             justify-content: center;
             page-break-after: always;
+            padding: 2rem;
+          }
+
+          .cover-content {
+            width: 100%;
+            max-width: 800px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+          }
+
+          .photo-mosaic {
+            justify-self: end;
+          }
+
+          .mosaic-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 0.5rem;
+            width: 300px;
+            height: 300px;
+          }
+
+          .mosaic-item {
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+
+          .mosaic-photo {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .mini-map-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-top: 2rem;
+          }
+
+          .mini-map-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #374151;
+          }
+
+          .mini-map {
+            width: 100%;
+            height: 200px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          }
+
+          .print-map {
+            width: 100%;
+            height: 100%;
+          }
+
+          @media print {
+            .mini-map {
+              height: 150px;
+            }
           }
 
           .album-main-title {

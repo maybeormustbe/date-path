@@ -1,16 +1,17 @@
 {
-  "name": "supabase-to-firebase-migration",
-  "version": "1.0.0",
-  "description": "Scripts de migration de Supabase vers Firebase",
-  "main": "export-supabase-data.js",
+  "name": "supabase-migration-tools",
+  "version": "1.0.0", 
+  "description": "Scripts de migration entre instances Supabase",
+  "main": "supabase-to-supabase.js",
   "scripts": {
-    "export": "node export-supabase-data.js",
-    "import": "node import-to-firebase.js",
-    "install-deps": "npm install @supabase/supabase-js firebase-admin"
+    "export": "node supabase-to-supabase.js export",
+    "import": "node supabase-to-supabase.js import",
+    "export-firebase": "node export-supabase-data.js",
+    "import-firebase": "node import-to-firebase.js",
+    "install-deps": "npm install @supabase/supabase-js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.55.0",
-    "firebase-admin": "^12.0.0"
+    "@supabase/supabase-js": "^2.55.0"
   },
   "author": "",
   "license": "MIT"

@@ -1,0 +1,15 @@
+{
+  "source": {
+    "url": "https://your-source-project.supabase.co",
+    "anon_key": "your-source-anon-key",
+    "service_role_key": "your-source-service-role-key"
+  },
+  "destination": {
+    "url": "https://your-destination-project.supabase.co",
+    "anon_key": "your-destination-anon-key", 
+    "service_role_key": "your-destination-service-role-key"
+  },
+  "tables": ["albums", "day_entries", "photos"],
+  "storage_buckets": ["photos", "thumbnails"],
+  "export_users": true
+}

@@ -1,42 +1,69 @@
-# Migration Supabase vers Firebase
+# Scripts de Migration Supabase
 
-Ce dossier contient les scripts nécessaires pour migrer vos données de Supabase vers Firebase.
+Ce dossier contient les scripts pour migrer des données entre instances Supabase ou vers Firebase.
 
-## 📋 Prérequis
+## 🔄 Migration Supabase vers Supabase
 
-- Node.js installé sur votre machine
-- Accès aux données Supabase (les clés sont déjà configurées dans le script d'export)
-- Projet Firebase configuré (pour l'import)
-
-## 🚀 Utilisation
-
-### 1. Installation des dépendances
-
+### Démarrage rapide
 ```bash
 cd scripts
-npm run install-deps
+chmod +x run-supabase-migration.sh
+./run-supabase-migration.sh
 ```
 
-### 2. Export des données Supabase
+### Configuration
+1. Copiez `config.json` et remplissez vos informations :
+```json
+{
+  "source": {
+    "url": "https://your-source-project.supabase.co",
+    "anon_key": "your-source-anon-key",
+    "service_role_key": "your-source-service-role-key"
+  },
+  "destination": {
+    "url": "https://your-destination-project.supabase.co", 
+    "anon_key": "your-destination-anon-key",
+    "service_role_key": "your-destination-service-role-key"
+  },
+  "tables": ["albums", "day_entries", "photos"],
+  "storage_buckets": ["photos", "thumbnails"],
+  "export_users": true
+}
+```
 
+### Commandes manuelles
 ```bash
+# Export seulement
+node supabase-to-supabase.js export
+
+# Import seulement  
+node supabase-to-supabase.js import
+```
+
+### ⚠️ Points importants
+- **Utilisateurs** : Mot de passe temporaire, réinitialisation requise
+- **Storage** : Seules les métadonnées sont exportées, pas les fichiers
+- **Service Role Key** : Requis pour l'export/import des utilisateurs
+- **Ordre d'import** : Utilisateurs d'abord, puis tables
+
+## 🔥 Migration Supabase vers Firebase
+
+### Export des données Supabase
+```bash
+chmod +x run-export.sh
 ./run-export.sh
-# ou directement
-npm run export
 ```
 
-### 3. Import vers Firebase
-
-**Prérequis pour l'import :**
-1. Créez un projet Firebase
-2. Téléchargez la clé de service account depuis Firebase Console → Project Settings → Service accounts
-3. Renommez le fichier en `firebase-service-account.json` et placez-le dans ce dossier
-
+### Import vers Firebase
 ```bash
+chmod +x run-import.sh  
 ./run-import.sh
-# ou directement  
-npm run import
 ```
+
+### Configuration Firebase
+1. Console Firebase → Project Settings → Service accounts
+2. Generate new private key → `firebase-service-account.json`
+3. Placez le fichier dans `scripts/`
 
 ## 📁 Fichiers générés
 

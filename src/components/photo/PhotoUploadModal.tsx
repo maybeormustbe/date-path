@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { Upload, X, Image as ImageIcon, MapPin, Calendar } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, MapPin, Calendar, FileArchive } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { parse } from 'exifr';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import JSZip from 'jszip';
 
 interface PhotoFile {
   file: File;
@@ -41,6 +42,7 @@ export function PhotoUploadModal({
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [processingMetadata, setProcessingMetadata] = useState(false);
+  const [extractingZip, setExtractingZip] = useState(false);
 
   const createFileId = () => `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -334,33 +336,97 @@ export function PhotoUploadModal({
     return processedResults;
   };
 
+  // Fonction pour extraire les images d'un fichier ZIP
+  const extractImagesFromZip = async (zipFile: File): Promise<File[]> => {
+    setExtractingZip(true);
+    const extractedFiles: File[] = [];
+    
+    try {
+      const zip = new JSZip();
+      const contents = await zip.loadAsync(zipFile);
+      
+      for (const [relativePath, file] of Object.entries(contents.files)) {
+        if (!file.dir) {
+          const blob = await file.async('blob');
+          
+          // Vérifier si c'est une image par son extension
+          const filename = relativePath.split('/').pop() || relativePath;
+          const extension = filename.toLowerCase().split('.').pop() || '';
+          const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'];
+          
+          if (imageExtensions.includes(extension)) {
+            // Créer un File object avec le bon type MIME
+            let mimeType = 'image/jpeg';
+            if (extension === 'png') mimeType = 'image/png';
+            else if (extension === 'gif') mimeType = 'image/gif';
+            else if (extension === 'bmp') mimeType = 'image/bmp';
+            else if (extension === 'webp') mimeType = 'image/webp';
+            else if (extension === 'heic' || extension === 'heif') mimeType = 'image/heic';
+            
+            const imageFile = new File([blob], filename, { 
+              type: mimeType,
+              lastModified: file.date?.getTime() || Date.now()
+            });
+            
+            extractedFiles.push(imageFile);
+          }
+        }
+      }
+      
+      toast.success(`${extractedFiles.length} image${extractedFiles.length !== 1 ? 's' : ''} extraite${extractedFiles.length !== 1 ? 's' : ''} du ZIP`);
+      return extractedFiles;
+    } catch (error) {
+      console.error('Erreur lors de l\'extraction du ZIP:', error);
+      toast.error('Erreur lors de l\'extraction du fichier ZIP');
+      return [];
+    } finally {
+      setExtractingZip(false);
+    }
+  };
+
   const handleFileSelect = useCallback(async (selectedFiles: FileList) => {
     setProcessingMetadata(true);
     setFiles([]); // Reset pour affichage progressif
     
-    // Filtrer les fichiers valides
-    const validFiles: File[] = [];
+    // Séparer les fichiers ZIP des images
+    const zipFiles: File[] = [];
+    const imageFiles: File[] = [];
+    
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
       
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} n'est pas une image valide`);
-        continue;
+      if (file.type === 'application/zip' || file.name.toLowerCase().endsWith('.zip')) {
+        zipFiles.push(file);
+      } else if (file.type.startsWith('image/')) {
+        imageFiles.push(file);
+      } else {
+        toast.error(`${file.name} n'est pas un format supporté (image ou ZIP)`);
       }
-      
-      validFiles.push(file);
     }
     
-    if (validFiles.length === 0) {
+    // Traiter les fichiers ZIP d'abord
+    const allFiles: File[] = [...imageFiles];
+    
+    for (const zipFile of zipFiles) {
+      const extractedImages = await extractImagesFromZip(zipFile);
+      allFiles.push(...extractedImages);
+    }
+    
+    if (allFiles.length === 0) {
       setProcessingMetadata(false);
       return;
     }
     
     // Traitement par batches pour améliorer les performances
-    await processBatch(validFiles, 5);
+    await processBatch(allFiles, 5);
     
     setProcessingMetadata(false);
-    toast.success(`${validFiles.length} photo${validFiles.length !== 1 ? 's' : ''} ajoutée${validFiles.length !== 1 ? 's' : ''}`);
+    
+    const totalMessage = zipFiles.length > 0 
+      ? `${allFiles.length} image${allFiles.length !== 1 ? 's' : ''} ajoutée${allFiles.length !== 1 ? 's' : ''} (${zipFiles.length} ZIP traité${zipFiles.length !== 1 ? 's' : ''})`
+      : `${allFiles.length} image${allFiles.length !== 1 ? 's' : ''} ajoutée${allFiles.length !== 1 ? 's' : ''}`;
+    
+    toast.success(totalMessage);
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -489,31 +555,13 @@ export function PhotoUploadModal({
     }
   };
 
-  const formatMetadata = (metadata?: PhotoFile['metadata']) => {
-    if (!metadata) return 'Aucune métadonnée';
-    
-    const parts = [];
-    
-    if (metadata.date) {
-      parts.push(format(metadata.date, 'dd MMMM yyyy à HH:mm', { locale: fr }));
-    }
-    
-    if (metadata.locationName) {
-      parts.push(metadata.locationName);
-    } else if (metadata.latitude && metadata.longitude) {
-      parts.push(`${metadata.latitude.toFixed(4)}, ${metadata.longitude.toFixed(4)}`);
-    }
-    
-    return parts.length > 0 ? parts.join(' • ') : 'Aucune métadonnée';
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col z-[9999]">
         <DialogHeader>
           <DialogTitle>Ajouter des photos</DialogTitle>
           <DialogDescription>
-            Glissez-déposez vos photos ou cliquez pour les sélectionner. Les métadonnées de date et lieu seront automatiquement extraites.
+            Glissez-déposez vos photos ou fichiers ZIP, ou cliquez pour les sélectionner. Les métadonnées de date et lieu seront automatiquement extraites.
           </DialogDescription>
         </DialogHeader>
 
@@ -527,7 +575,7 @@ export function PhotoUploadModal({
               const input = document.createElement('input');
               input.type = 'file';
               input.multiple = true;
-              input.accept = 'image/*';
+              input.accept = 'image/*,.zip';
               input.onchange = (e) => {
                 const files = (e.target as HTMLInputElement).files;
                 if (files) handleFileSelect(files);
@@ -535,13 +583,19 @@ export function PhotoUploadModal({
               input.click();
             }}
           >
-            <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Sélectionnez vos photos</h3>
+            {extractingZip ? (
+              <FileArchive className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
+            ) : (
+              <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            )}
+            <h3 className="text-lg font-medium mb-2">
+              {extractingZip ? 'Extraction du ZIP...' : 'Sélectionnez vos photos'}
+            </h3>
             <p className="text-muted-foreground mb-4">
-              Glissez-déposez vos fichiers ici ou cliquez pour parcourir
+              {extractingZip ? 'Veuillez patienter...' : 'Glissez-déposez vos fichiers ici ou cliquez pour parcourir'}
             </p>
             <p className="text-sm text-muted-foreground">
-              Formats supportés: JPG, PNG, HEIC, etc.
+              Formats supportés: JPG, PNG, HEIC, ZIP, etc.
             </p>
           </div>
 
@@ -621,12 +675,12 @@ export function PhotoUploadModal({
 
           {/* Actions */}
           <div className="flex gap-2 justify-end border-t border-border pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading}>
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={uploading || extractingZip}>
               Annuler
             </Button>
             <Button 
               onClick={uploadFiles} 
-              disabled={files.length === 0 || uploading || processingMetadata}
+              disabled={files.length === 0 || uploading || processingMetadata || extractingZip}
               className="bg-gradient-sky hover:opacity-90"
             >
               {uploading ? 'Upload...' : `Uploader ${files.length} photo${files.length !== 1 ? 's' : ''}`}

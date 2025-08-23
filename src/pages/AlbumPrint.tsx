@@ -105,15 +105,20 @@ export default function AlbumPrint() {
       setAllFavoritePhotos(favoritePhotos || []);
       
       const locations = (favoritePhotos || [])
-        .filter(photo => photo.latitude && photo.longitude)
+        .filter(photo => {
+          // Vérifier que les coordonnées existent et sont des nombres valides
+          const lat = parseFloat(photo.latitude?.toString() || '');
+          const lng = parseFloat(photo.longitude?.toString() || '');
+          return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+        })
         .map(photo => ({
           id: photo.id,
-          lat: parseFloat(photo.latitude.toString()),
-          lng: parseFloat(photo.longitude.toString()),
+          latitude: parseFloat(photo.latitude.toString()),
+          longitude: parseFloat(photo.longitude.toString()),
           title: photo.title || 'Photo',
           date: photo.taken_at,
           photoCount: 1,
-          isSelected: false
+          selected: false
         }));
       
       setMapLocations(locations);

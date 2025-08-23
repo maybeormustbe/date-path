@@ -121,40 +121,19 @@ export function PhotoMap({
     locations.forEach((location) => {
       const isSelected = location.id === selectedLocationId;
       
-      // Create tag-like marker with title
+      // Create simple circular marker
       const markerIcon = L.divIcon({
-        className: 'custom-tag-marker',
+        className: 'custom-simple-marker',
         html: `<div style="
           background-color: ${isSelected ? '#ef4444' : '#3b82f6'}; 
-          color: white;
-          padding: 4px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: 600;
-          white-space: nowrap;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
           border: 2px solid white;
-          position: relative;
-          text-align: center;
-          max-width: 120px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        ">
-          ${location.title}
-          <div style="
-            position: absolute;
-            bottom: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-top: 6px solid ${isSelected ? '#ef4444' : '#3b82f6'};
-          "></div>
-        </div>`,
-        iconSize: [120, 28],
-        iconAnchor: [60, 34], // Adjusted for the pointer
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        "></div>`,
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
       });
 
       const marker = L.marker([location.latitude, location.longitude], { icon: markerIcon })

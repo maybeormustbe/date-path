@@ -115,7 +115,7 @@ export default function AlbumPrint() {
            id: photo.id,
            latitude: parseFloat(photo.latitude.toString()),
            longitude: parseFloat(photo.longitude.toString()),
-           title: '', // Empty title to remove text tags
+           title: photo.title || 'Photo',
            date: photo.taken_at,
            photoCount: 1,
            selected: false
@@ -341,28 +341,25 @@ export default function AlbumPrint() {
 
            .cover-content {
              width: 100%;
-             max-width: 900px;
+             max-width: 800px;
              display: grid;
-             grid-template-columns: 1fr 400px;
+             grid-template-columns: 1fr 1fr;
              gap: 3rem;
-             align-items: start;
+             align-items: center;
            }
 
           .photo-mosaic {
-            grid-row: 2;
-            grid-column: 1;
-            justify-self: center;
-            margin-top: 2rem;
+            justify-self: end;
           }
 
-          .mosaic-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
-            gap: 0.5rem;
-            width: 300px;
-            height: 300px;
-          }
+           .mosaic-grid {
+             display: grid;
+             grid-template-columns: repeat(3, 1fr);
+             grid-template-rows: repeat(3, 1fr);
+             gap: 0.5rem;
+             width: 250px;
+             height: 250px;
+           }
 
           .mosaic-item {
             overflow: hidden;
@@ -376,25 +373,26 @@ export default function AlbumPrint() {
             object-fit: cover;
           }
 
-           .mini-map-container {
-             grid-column: 2;
-             text-align: center;
-           }
+            .mini-map-container {
+              grid-column: 1 / -1;
+              text-align: center;
+              margin-top: 2rem;
+            }
 
-           .mini-map-title {
-             font-size: 1.2rem;
-             font-weight: 600;
-             margin-bottom: 1rem;
-             color: #374151;
-           }
+            .mini-map-title {
+              font-size: 1.2rem;
+              font-weight: 600;
+              margin-bottom: 1rem;
+              color: #374151;
+            }
 
-           .mini-map {
-             width: 400px;
-             height: 400px;
-             border-radius: 8px;
-             overflow: hidden;
-             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-           }
+            .mini-map {
+              width: 100%;
+              height: 250px;
+              border-radius: 8px;
+              overflow: hidden;
+              box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
 
           .print-map {
             width: 100%;
@@ -403,17 +401,16 @@ export default function AlbumPrint() {
 
            @media print {
              .mini-map {
-               width: 300px;
-               height: 300px;
+               height: 200px;
              }
            }
 
-          .album-main-title {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #1f2937;
-          }
+           .album-main-title {
+             font-size: 2.5rem;
+             font-weight: bold;
+             margin-bottom: 1rem;
+             color: #1f2937;
+           }
 
           .album-description {
             font-size: 1.2rem;

@@ -388,7 +388,7 @@ export default function AlbumPrint() {
 
             .mini-map {
               width: 100%;
-              height: 250px;
+              height: 313px;
               border-radius: 8px;
               overflow: hidden;
               box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -401,7 +401,7 @@ export default function AlbumPrint() {
 
            @media print {
              .mini-map {
-               height: 200px;
+               height: 250px;
              }
            }
 

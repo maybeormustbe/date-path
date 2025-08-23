@@ -104,22 +104,22 @@ export default function AlbumPrint() {
       // Store all favorite photos and create map locations
       setAllFavoritePhotos(favoritePhotos || []);
       
-      const locations = (favoritePhotos || [])
-        .filter(photo => {
-          // Vérifier que les coordonnées existent et sont des nombres valides
-          const lat = parseFloat(photo.latitude?.toString() || '');
-          const lng = parseFloat(photo.longitude?.toString() || '');
-          return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
-        })
-        .map(photo => ({
-          id: photo.id,
-          latitude: parseFloat(photo.latitude.toString()),
-          longitude: parseFloat(photo.longitude.toString()),
-          title: photo.title || 'Photo',
-          date: photo.taken_at,
-          photoCount: 1,
-          selected: false
-        }));
+       const locations = (favoritePhotos || [])
+         .filter(photo => {
+           // Vérifier que les coordonnées existent et sont des nombres valides
+           const lat = parseFloat(photo.latitude?.toString() || '');
+           const lng = parseFloat(photo.longitude?.toString() || '');
+           return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+         })
+         .map(photo => ({
+           id: photo.id,
+           latitude: parseFloat(photo.latitude.toString()),
+           longitude: parseFloat(photo.longitude.toString()),
+           title: '', // Empty title to remove text tags
+           date: photo.taken_at,
+           photoCount: 1,
+           selected: false
+         }));
       
       setMapLocations(locations);
 
@@ -235,7 +235,7 @@ export default function AlbumPrint() {
                 </div>
               </div>
             )}
-            
+
             {/* Mini map */}
             {mapLocations.length > 0 && (
               <div className="mini-map-container">
@@ -339,17 +339,20 @@ export default function AlbumPrint() {
             padding: 2rem;
           }
 
-          .cover-content {
-            width: 100%;
-            max-width: 800px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 3rem;
-            align-items: center;
-          }
+           .cover-content {
+             width: 100%;
+             max-width: 900px;
+             display: grid;
+             grid-template-columns: 1fr 400px;
+             gap: 3rem;
+             align-items: start;
+           }
 
           .photo-mosaic {
-            justify-self: end;
+            grid-row: 2;
+            grid-column: 1;
+            justify-self: center;
+            margin-top: 2rem;
           }
 
           .mosaic-grid {
@@ -373,37 +376,37 @@ export default function AlbumPrint() {
             object-fit: cover;
           }
 
-          .mini-map-container {
-            grid-column: 1 / -1;
-            text-align: center;
-            margin-top: 2rem;
-          }
+           .mini-map-container {
+             grid-column: 2;
+             text-align: center;
+           }
 
-          .mini-map-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #374151;
-          }
+           .mini-map-title {
+             font-size: 1.2rem;
+             font-weight: 600;
+             margin-bottom: 1rem;
+             color: #374151;
+           }
 
-          .mini-map {
-            width: 100%;
-            height: 200px;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-          }
+           .mini-map {
+             width: 400px;
+             height: 400px;
+             border-radius: 8px;
+             overflow: hidden;
+             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+           }
 
           .print-map {
             width: 100%;
             height: 100%;
           }
 
-          @media print {
-            .mini-map {
-              height: 150px;
-            }
-          }
+           @media print {
+             .mini-map {
+               width: 300px;
+               height: 300px;
+             }
+           }
 
           .album-main-title {
             font-size: 3rem;

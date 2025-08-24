@@ -324,9 +324,9 @@ export default function AlbumView() {
       </header>
 
       {/* Content */}
-      <div className="flex h-[calc(100vh-80px)]">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-80px)]">
         {/* Sidebar with days */}
-        <div className="w-80 border-r border-border bg-card/50 overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border bg-card/50 overflow-y-auto custom-scrollbar max-h-[50vh] lg:max-h-none">
           <div className="p-6">
             <h3 className="font-semibold mb-4">Jours de l'album</h3>
             {dayEntries.length === 0 ? (

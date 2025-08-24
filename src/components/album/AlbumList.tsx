@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Plus, Calendar, MapPin, MoreVertical, Edit, Trash, LogOut, Camera, Heart } from 'lucide-react';
+import { Plus, Calendar, MapPin, MoreVertical, Edit, Trash, LogOut, Camera, Heart, Menu } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -26,6 +27,7 @@ interface Album {
 export function AlbumList() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [albums, setAlbums] = useState<Album[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -189,63 +191,56 @@ export function AlbumList() {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/memories')}
-                className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-pink-500/20 hover:from-pink-500/20 hover:to-purple-500/20"
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                Souvenirs
-              </Button>
-              
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-sky hover:opacity-90">
+              {isMobile ? (
+                // Menu mobile unique
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Menu className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="z-[9999] bg-background border border-border shadow-lg">
+                    <DropdownMenuItem onClick={() => navigate('/memories')}>
+                      <Heart className="h-4 w-4 mr-2" />
+                      Souvenirs
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setCreateDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nouvel Album
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Déconnexion
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                // Boutons desktop
+                <>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/memories')}
+                    className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-pink-500/20 hover:from-pink-500/20 hover:to-purple-500/20"
+                  >
+                    <Heart className="h-4 w-4 mr-2" />
+                    Souvenirs
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => setCreateDialogOpen(true)}
+                    className="bg-gradient-sky hover:opacity-90"
+                  >
                     <Plus className="h-4 w-4 mr-2" />
                     Nouvel Album
                   </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Créer un nouvel album</DialogTitle>
-                    <DialogDescription>
-                      Ajoutez un titre et une description pour votre nouvel album
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Titre</Label>
-                      <Input
-                        id="title"
-                        placeholder="Nom de l'album"
-                        value={newAlbumTitle}
-                        onChange={(e) => setNewAlbumTitle(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Description (optionnel)</Label>
-                      <Input
-                        id="description"
-                        placeholder="Description de l'album"
-                        value={newAlbumDescription}
-                        onChange={(e) => setNewAlbumDescription(e.target.value)}
-                      />
-                    </div>
-                    <div className="flex gap-2 justify-end">
-                      <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
-                        Annuler
-                      </Button>
-                      <Button onClick={createAlbum} className="bg-gradient-sky hover:opacity-90">
-                        Créer
-                      </Button>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
-              <Button variant="outline" onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Déconnexion
-              </Button>
+                  
+                  <Button variant="outline" onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Déconnexion
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -330,6 +325,46 @@ export function AlbumList() {
           </div>
         )}
       </main>
+
+      {/* Create Album Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer un nouvel album</DialogTitle>
+            <DialogDescription>
+              Ajoutez un titre et une description pour votre nouvel album
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Titre</Label>
+              <Input
+                id="title"
+                placeholder="Nom de l'album"
+                value={newAlbumTitle}
+                onChange={(e) => setNewAlbumTitle(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description (optionnel)</Label>
+              <Input
+                id="description"
+                placeholder="Description de l'album"
+                value={newAlbumDescription}
+                onChange={(e) => setNewAlbumDescription(e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button onClick={createAlbum} className="bg-gradient-sky hover:opacity-90">
+                Créer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

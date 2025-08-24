@@ -282,9 +282,9 @@ export default function DayView() {
       </header>
 
       {/* Content */}
-      <div className="flex h-[calc(100vh-200px)]">
+      <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)]">
         {/* Photos list */}
-        <div className="w-80 border-r border-border bg-card/50 overflow-y-auto custom-scrollbar">
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border bg-card/50 overflow-y-auto custom-scrollbar max-h-[50vh] lg:max-h-none">
           <div className="p-6">
             <h3 className="font-semibold mb-4">Photos de la journée</h3>
             {photos.length === 0 ? (

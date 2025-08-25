@@ -252,63 +252,47 @@ export default function AlbumPrint() {
           </div>
         </div>
 
-        {/* Day entries - 2 per page */}
-        <div className="days-grid">
-          {dayEntries.map((day, index) => (
-            <div key={day.id} className="day-entry">
-              <div className="day-content">
-                {/* Date and location */}
-                <div className="day-header">
-                  <h2 className="day-title">
-                    {day.title || format(new Date(day.date), 'EEEE d MMMM yyyy', { locale: fr })}
-                  </h2>
-                  {day.location_name && (
-                    <p className="day-location">{day.location_name}</p>
-                  )}
-                </div>
-
-                {/* Cover photo */}
-                {day.cover_photo && (
-                  <div className="day-photo">
-                    <img
-                      src={supabase.storage.from('photos').getPublicUrl(day.cover_photo.file_path).data.publicUrl}
-                      alt={day.cover_photo.title || 'Photo du jour'}
-                      className="photo-img"
-                    />
-                  </div>
-                )}
-
-                {/* Favorite photos */}
-                {day.favorite_photos && day.favorite_photos.length > 0 && (
-                  <div className="favorite-photos">
-                    <h3 className="favorite-photos-title">Photos favorites</h3>
-                    <div className="favorite-photos-grid">
-                      {day.favorite_photos.map((photo) => (
-                        <div key={photo.id} className="favorite-photo-item">
-                          <img
-                            src={supabase.storage.from('photos').getPublicUrl(photo.file_path).data.publicUrl}
-                            alt={photo.title || 'Photo favorite'}
-                            className="favorite-photo-img"
-                          />
-                          {photo.title && (
-                            <p className="favorite-photo-title">{photo.title}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Description/story */}
-                {day.description && (
-                  <div className="day-story">
-                    <p>{day.description}</p>
-                  </div>
+        {/* Day entries - one per page */}
+        {dayEntries.map((day, index) => (
+          <div key={day.id} className="day-page">
+            {/* Day title and subtitle */}
+            <div className="day-header">
+              <h1 className="day-main-title">
+                {day.title || format(new Date(day.date), 'EEEE d MMMM yyyy', { locale: fr })}
+              </h1>
+              <div className="day-subtitle">
+                <p className="day-date">{format(new Date(day.date), 'd MMMM yyyy', { locale: fr })}</p>
+                {day.location_name && (
+                  <p className="day-location">{day.location_name}</p>
                 )}
               </div>
             </div>
-          ))}
-        </div>
+
+            {/* Favorite photos mosaic */}
+            {day.favorite_photos && day.favorite_photos.length > 0 && (
+              <div className="day-photos-mosaic">
+                <div className="photos-grid">
+                  {day.favorite_photos.map((photo) => (
+                    <div key={photo.id} className="photo-mosaic-item">
+                      <img
+                        src={supabase.storage.from('photos').getPublicUrl(photo.file_path).data.publicUrl}
+                        alt={photo.title || 'Photo favorite'}
+                        className="photo-mosaic-img"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Day description */}
+            {day.description && (
+              <div className="day-text">
+                <p>{day.description}</p>
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       <style dangerouslySetInnerHTML={{
@@ -425,79 +409,124 @@ export default function AlbumPrint() {
             color: #374151;
           }
 
-          .days-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-          }
+           /* Day page styles */
+           .day-page {
+             page-break-before: always;
+             page-break-inside: avoid;
+             padding: 2rem 0;
+             min-height: 100vh;
+           }
 
-          .day-entry {
-            page-break-inside: avoid;
-            margin-bottom: 3rem;
-          }
+           .day-page:first-child {
+             page-break-before: auto;
+           }
 
-          .day-entry:nth-child(2n) {
-            page-break-after: always;
-          }
+           .day-header {
+             text-align: center;
+             margin-bottom: 2rem;
+           }
 
-          .day-content {
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 1.5rem;
-            background: #fafafa;
-          }
+           .day-main-title {
+             font-size: 2rem;
+             font-weight: bold;
+             color: #1f2937;
+             margin-bottom: 1rem;
+           }
 
-          .day-header {
-            margin-bottom: 1rem;
-          }
+           .day-subtitle {
+             display: flex;
+             justify-content: center;
+             gap: 2rem;
+             margin-bottom: 2rem;
+           }
 
-          .day-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            color: #1f2937;
-          }
+           .day-date {
+             font-size: 1.1rem;
+             color: #6b7280;
+             font-weight: 500;
+           }
 
-          .day-location {
-            font-size: 1rem;
-            color: #6b7280;
-            font-style: italic;
-          }
+           .day-location {
+             font-size: 1.1rem;
+             color: #6b7280;
+             font-style: italic;
+           }
 
-          .day-photo {
-            margin: 1.5rem 0;
-            text-align: center;
-          }
+           .day-photos-mosaic {
+             margin-bottom: 2rem;
+           }
 
-          .photo-img {
-            max-width: 100%;
-            max-height: 300px;
-            object-fit: cover;
-            border-radius: 4px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          }
+           .photos-grid {
+             display: grid;
+             grid-template-columns: repeat(3, 1fr);
+             gap: 1rem;
+             margin-bottom: 1.5rem;
+           }
 
-          .day-story {
-            margin-top: 1rem;
-          }
+           .photo-mosaic-item {
+             overflow: hidden;
+             border-radius: 8px;
+             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+             aspect-ratio: 4/3;
+           }
 
-          .day-story p {
-            font-size: 1rem;
-            line-height: 1.6;
-            color: #374151;
-            text-align: justify;
-          }
+           .photo-mosaic-img {
+             width: 100%;
+             height: 100%;
+             object-fit: cover;
+           }
 
-          .favorite-photos {
-            margin: 1.5rem 0;
-          }
+           .day-text {
+             margin-top: 2rem;
+           }
 
-          .favorite-photos-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-            color: #374151;
-          }
+           .day-text p {
+             font-size: 1rem;
+             line-height: 1.7;
+             color: #374151;
+             text-align: justify;
+           }
+
+           /* Remove old day entry styles */
+           .days-grid {
+             display: none;
+           }
+
+           .day-entry {
+             display: none;
+           }
+
+           .day-content {
+             display: none;
+           }
+
+           .day-title {
+             display: none;
+           }
+
+           .day-photo {
+             display: none;
+           }
+
+           .photo-img {
+             display: none;
+           }
+
+           .day-story {
+             display: none;
+           }
+
+           .day-story p {
+             display: none;
+           }
+
+           .favorite-photos {
+             display: none;
+           }
+
+           .favorite-photos-title {
+             display: none;
+           }
 
           .favorite-photos-grid {
             display: grid;

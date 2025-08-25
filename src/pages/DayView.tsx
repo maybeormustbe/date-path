@@ -476,6 +476,16 @@ export default function DayView() {
             setModalPhoto(photo);
           }
         }}
+        onPhotoUpdate={() => {
+          fetchData();
+          // Refresh the current modal photo data if one is selected
+          if (modalPhoto) {
+            const updatedPhoto = photos.find(p => p.id === modalPhoto.id);
+            if (updatedPhoto) {
+              setModalPhoto(updatedPhoto);
+            }
+          }
+        }}
       />
     </div>
   );

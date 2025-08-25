@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoModal } from '@/components/photo/PhotoModal';
 import { PhotoActions } from '@/components/photo/PhotoActions';
@@ -44,6 +45,7 @@ export default function DayView() {
   const { albumId, dayId } = useParams<{ albumId: string; dayId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [album, setAlbum] = useState<Album | null>(null);
   const [dayEntry, setDayEntry] = useState<DayEntry | null>(null);
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -260,9 +262,9 @@ export default function DayView() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-card border-b border-card-border shadow-soft">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
+      <header className={`bg-card border-b border-card-border shadow-soft ${isMobile ? 'h-[25vh]' : ''}`}>
+        <div className="max-w-7xl mx-auto px-6 py-4 h-full">
+          <div className="flex items-center justify-between h-full">
             <div className="flex items-center gap-4">
               <Button variant="ghost" onClick={() => navigate(`/album/${albumId}`)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -282,9 +284,9 @@ export default function DayView() {
       </header>
 
       {/* Content */}
-      <div className="flex flex-col lg:flex-row h-[calc(100vh-200px)]">
+      <div className="flex flex-col lg:flex-row h-[75vh] lg:h-[calc(100vh-200px)]">
         {/* Photos list */}
-        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border bg-card/50 overflow-y-auto custom-scrollbar max-h-[60vh] lg:max-h-none">
+        <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border bg-card/50 overflow-y-auto custom-scrollbar h-full lg:max-h-none">
           <div className="p-6">
             <h3 className="font-semibold mb-4">Photos de la journée</h3>
             {photos.length === 0 ? (
@@ -413,8 +415,8 @@ export default function DayView() {
           </div>
         </div>
 
-        {/* Map */}
-        <div className="flex-1">
+        {/* Map - Hidden on mobile */}
+        <div className="flex-1 hidden lg:block">
           {mapLocations.length > 0 ? (
             <PhotoMap
               locations={mapLocations}

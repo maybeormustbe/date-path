@@ -41,7 +41,7 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
 
   useEffect(() => {
     const getSignedUrl = async () => {
-      if (!photo) return;
+      if (!photo || !photo.file_path) return;
       
       try {
         const { data, error } = await supabase.storage
@@ -56,11 +56,14 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
         setImageUrl(data.signedUrl);
       } catch (error) {
         console.error('Erreur:', error);
+        setImageUrl(''); // Clear the image URL if there's an error
       }
     };
     
-    if (isOpen && photo) {
+    if (isOpen && photo && photo.file_path) {
       getSignedUrl();
+    } else {
+      setImageUrl(''); // Clear URL when modal is closed or no photo
     }
   }, [isOpen, photo]);
 

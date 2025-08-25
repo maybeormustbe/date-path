@@ -75,6 +75,9 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
 
       if (error) throw error;
 
+      // Update local photo object to reflect changes immediately
+      photo.title = editTitle || null;
+
       toast({
         title: "Titre mis à jour",
         description: "Le titre de la photo a été modifié avec succès."
@@ -109,6 +112,9 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
           ? "La photo a été retirée des favoris." 
           : "La photo a été ajoutée aux favoris."
       });
+
+      // Update local photo object to reflect changes immediately
+      photo.is_favorite = !photo.is_favorite;
 
       onPhotoUpdate();
     } catch (error) {

@@ -135,6 +135,20 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
     }
     
     try {
+      // Déterminer la photo à afficher après suppression
+      const currentIndex = photos.findIndex(p => p.id === photo.id);
+      let nextPhotoId: string | null = null;
+      
+      if (photos.length > 1) {
+        if (currentIndex > 0) {
+          // Afficher la photo précédente
+          nextPhotoId = photos[currentIndex - 1].id;
+        } else if (currentIndex < photos.length - 1) {
+          // Si c'est la première photo, afficher la suivante
+          nextPhotoId = photos[currentIndex + 1].id;
+        }
+      }
+
       // Supprimer le fichier du storage
       const { error: storageError } = await supabase.storage
         .from('photos')
@@ -157,7 +171,13 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
         description: "La photo a été supprimée avec succès."
       });
 
-      onClose();
+      // Naviguer vers la photo suivante ou fermer la modale
+      if (nextPhotoId) {
+        onNavigate(nextPhotoId);
+      } else {
+        onClose();
+      }
+      
       onPhotoUpdate();
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);

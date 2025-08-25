@@ -138,7 +138,7 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
     }
     
     try {
-      // Déterminer la photo à afficher après suppression
+      // Déterminer la photo à afficher après suppression AVANT la suppression
       const currentIndex = photos.findIndex(p => p.id === photo.id);
       let nextPhotoId: string | null = null;
       
@@ -174,14 +174,18 @@ export const PhotoModal = ({ isOpen, onClose, photo, albumTitle, dayTitle, photo
         description: "La photo a été supprimée avec succès."
       });
 
-      // Naviguer vers la photo suivante ou fermer la modale
-      if (nextPhotoId) {
-        onNavigate(nextPhotoId);
-      } else {
-        onClose();
-      }
-      
+      // Déclencher la mise à jour des données en premier
       onPhotoUpdate();
+
+      // Ensuite naviguer vers la photo suivante avec un petit délai pour s'assurer que les données sont à jour
+      setTimeout(() => {
+        if (nextPhotoId) {
+          onNavigate(nextPhotoId);
+        } else {
+          onClose();
+        }
+      }, 100);
+      
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       toast({

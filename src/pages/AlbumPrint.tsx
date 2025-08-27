@@ -7,6 +7,7 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { PhotoMap } from '@/components/map/PhotoMap';
+import { usePrintSettings } from '@/hooks/usePrintSettings';
 
 interface Album {
   id: string;
@@ -37,6 +38,7 @@ export default function AlbumPrint() {
   const { albumId } = useParams<{ albumId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { settings } = usePrintSettings();
   const [album, setAlbum] = useState<Album | null>(null);
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
   const [allFavoritePhotos, setAllFavoritePhotos] = useState<any[]>([]);
@@ -293,7 +295,7 @@ export default function AlbumPrint() {
         __html: `
           @media print {
             @page {
-              size: A4;
+              size: A4 ${settings.orientation};
               margin: 1.5cm;
             }
 
@@ -304,7 +306,7 @@ export default function AlbumPrint() {
           }
 
           .print-container {
-            background: white;
+            background: ${settings.backgroundColor};
             color: black;
           }
 
@@ -315,6 +317,7 @@ export default function AlbumPrint() {
             justify-content: center;
             page-break-after: always;
             padding: 2rem;
+            background: ${settings.backgroundColor};
           }
 
            .cover-content {
@@ -409,6 +412,7 @@ export default function AlbumPrint() {
              page-break-inside: avoid;
              padding: 2rem 0;
              min-height: 100vh;
+             background: ${settings.backgroundColor};
            }
 
            .day-page:first-child {
@@ -434,7 +438,7 @@ export default function AlbumPrint() {
 
            .photos-grid {
              display: grid;
-             grid-template-columns: repeat(3, 1fr);
+             grid-template-columns: repeat(${settings.photosPerRow}, 1fr);
              gap: 1rem;
              margin-bottom: 1.5rem;
            }
@@ -536,7 +540,7 @@ export default function AlbumPrint() {
               max-width: 21cm;
               margin: 0 auto;
               padding: 2rem;
-              background: white;
+              background: ${settings.backgroundColor};
               box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             }
           }

@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PhotoMap } from '@/components/map/PhotoMap';
 import { PhotoUploadModal } from '@/components/photo/PhotoUploadModal';
+import { PrintSettingsModal } from '@/components/album/PrintSettingsModal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars, Settings, MapPin, Type } from 'lucide-react';
+import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars, Settings, MapPin, Type, Palette } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -44,6 +45,7 @@ export default function AlbumView() {
   const [dayEntries, setDayEntries] = useState<DayEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
+  const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string>();
   const [editingDayId, setEditingDayId] = useState<string>();
   const [editingTitle, setEditingTitle] = useState('');
@@ -305,6 +307,10 @@ export default function AlbumView() {
                   <Type className="h-4 w-4 mr-2" />
                   Mettre à jour les titres
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPrintSettingsOpen(true)}>
+                  <Palette className="h-4 w-4 mr-2" />
+                  Paramètres d'impression
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate(`/album/${albumId}/print`)}>
                   <Printer className="h-4 w-4 mr-2" />
                   Imprimer
@@ -436,6 +442,11 @@ export default function AlbumView() {
         onOpenChange={setUploadModalOpen}
         albumId={albumId!}
         onUploadComplete={fetchAlbumData}
+      />
+
+      <PrintSettingsModal
+        open={printSettingsOpen}
+        onOpenChange={setPrintSettingsOpen}
       />
     </div>
   );

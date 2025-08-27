@@ -255,17 +255,11 @@ export default function AlbumPrint() {
         {/* Day entries - one per page */}
         {dayEntries.map((day, index) => (
           <div key={day.id} className="day-page">
-            {/* Day title and subtitle */}
+            {/* Day title */}
             <div className="day-header">
               <h1 className="day-main-title">
                 {day.title || format(new Date(day.date), 'EEEE d MMMM yyyy', { locale: fr })}
               </h1>
-              <div className="day-subtitle">
-                <p className="day-date">{format(new Date(day.date), 'd MMMM yyyy', { locale: fr })}</p>
-                {day.location_name && (
-                  <p className="day-location">{day.location_name}</p>
-                )}
-              </div>
             </div>
 
             {/* Favorite photos mosaic */}
@@ -433,24 +427,6 @@ export default function AlbumPrint() {
              margin-bottom: 1rem;
            }
 
-           .day-subtitle {
-             display: flex;
-             justify-content: center;
-             gap: 2rem;
-             margin-bottom: 2rem;
-           }
-
-           .day-date {
-             font-size: 1.1rem;
-             color: #6b7280;
-             font-weight: 500;
-           }
-
-           .day-location {
-             font-size: 1.1rem;
-             color: #6b7280;
-             font-style: italic;
-           }
 
            .day-photos-mosaic {
              margin-bottom: 2rem;

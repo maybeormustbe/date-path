@@ -26,9 +26,6 @@ interface DayEntry {
   id: string;
   date: string;
   title: string | null;
-  location_name: string | null;
-  latitude: number | null;
-  longitude: number | null;
   cover_photo_id: string | null;
   photo_count: number;
   calculatedTitle: string;
@@ -36,6 +33,9 @@ interface DayEntry {
     thumbnail_path: string;
     file_path: string;
     title: string;
+    location_name: string | null;
+    latitude: number | null;
+    longitude: number | null;
   };
 }
 
@@ -90,15 +90,15 @@ export default function AlbumView() {
         id: day.id,
         date: day.date,
         title: day.title,
-        location_name: day.location_name,
-        latitude: day.latitude,
-        longitude: day.longitude,
         cover_photo_id: day.cover_photo_id,
         photo_count: day.photo_count || 0,
         cover_photo: day.cover_photo_thumbnail_path ? {
           thumbnail_path: day.cover_photo_thumbnail_path,
           file_path: day.cover_photo_file_path,
-          title: day.cover_photo_title
+          title: day.cover_photo_title,
+          location_name: day.cover_photo_location_name,
+          latitude: day.cover_photo_latitude,
+          longitude: day.cover_photo_longitude
         } : null
       }));
 
@@ -125,9 +125,6 @@ export default function AlbumView() {
               id: `placeholder-${dateStr}`,
               date: dateStr,
               title: null,
-              location_name: null,
-              latitude: null,
-              longitude: null,
               cover_photo_id: null,
               photo_count: 0,
               cover_photo: null
@@ -184,13 +181,13 @@ export default function AlbumView() {
 
 
   const mapLocations = dayEntries
-    .filter(day => day.latitude && day.longitude && !day.id.startsWith('placeholder-'))
+    .filter(day => day.cover_photo?.latitude && day.cover_photo?.longitude && !day.id.startsWith('placeholder-'))
     .map((day, index) => {
       const dayIndex = dayEntries.findIndex(d => d.id === day.id) + 1;
       return {
         id: day.id,
-        latitude: day.latitude!,
-        longitude: day.longitude!,
+        latitude: day.cover_photo!.latitude!,
+        longitude: day.cover_photo!.longitude!,
         title: day.calculatedTitle,
         date: day.date,
         photoCount: day.photo_count,
@@ -337,7 +334,7 @@ export default function AlbumView() {
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p>{day.date}</p>
-                              {day.location_name && <p>{day.location_name}</p>}
+                              {day.cover_photo?.location_name && <p>{day.cover_photo.location_name}</p>}
                               <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
                             </div>
                           </div>

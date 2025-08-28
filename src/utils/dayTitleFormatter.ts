@@ -9,7 +9,9 @@ const frenchMonths = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin',
 
 export interface DayForTitle {
   date: string;
-  location_name?: string | null;
+  cover_photo?: {
+    location_name?: string | null;
+  } | null;
 }
 
 /**
@@ -25,8 +27,8 @@ export function calculateDayTitle(day: DayForTitle, dayNumber: number): string {
   const dayOfMonth = date.getDate();
   const month = frenchMonths[date.getMonth()];
   
-  // Utiliser le lieu existant ou ne pas en afficher
-  const locationName = day.location_name || '';
+  // Utiliser le lieu de la photo de couverture ou ne pas en afficher
+  const locationName = day.cover_photo?.location_name || '';
   
   // Format: "J1, lundi 12 juillet, La Hautière"
   const title = `J${dayNumber}, ${weekDay} ${dayOfMonth} ${month}${locationName ? `, ${locationName}` : ''}`;

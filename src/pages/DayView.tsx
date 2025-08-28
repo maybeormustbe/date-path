@@ -24,9 +24,6 @@ interface DayEntry {
   date: string;
   title: string | null;
   description: string | null;
-  location_name: string | null;
-  latitude: number | null;
-  longitude: number | null;
   cover_photo_id: string | null;
 }
 
@@ -58,6 +55,7 @@ export default function DayView() {
   const [editingPhotoId, setEditingPhotoId] = useState<string>();
   const [editingPhotoTitle, setEditingPhotoTitle] = useState('');
   const [dayNumber, setDayNumber] = useState<number>(1);
+  const [coverPhoto, setCoverPhoto] = useState<Photo | null>(null);
 
   useEffect(() => {
     if (albumId && dayId && user) {
@@ -112,6 +110,12 @@ export default function DayView() {
       if (photosError) throw photosError;
       setPhotos(photosData || []);
 
+      // Find cover photo if exists
+      if (dayData.cover_photo_id && photosData) {
+        const foundCoverPhoto = photosData.find(p => p.id === dayData.cover_photo_id);
+        setCoverPhoto(foundCoverPhoto || null);
+      }
+
     } catch (error) {
       console.error('Erreur:', error);
       toast.error('Erreur lors du chargement des données');
@@ -142,38 +146,14 @@ export default function DayView() {
 
   const handleSetAsCover = async (photoId: string) => {
     try {
-      // Find the selected photo to get its coordinates and location
-      const selectedPhoto = photos.find(photo => photo.id === photoId);
-      
-      const updateData: any = { cover_photo_id: photoId };
-      
-      // If the photo has coordinates, update the day's position
-      if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
-        updateData.latitude = selectedPhoto.latitude;
-        updateData.longitude = selectedPhoto.longitude;
-        
-        // If the photo has a location name, also update it
-        if (selectedPhoto.location_name) {
-          updateData.location_name = selectedPhoto.location_name;
-        }
-      }
-
       const { error } = await supabase
         .from('day_entries')
-        .update(updateData)
+        .update({ cover_photo_id: photoId })
         .eq('id', dayId);
 
       if (error) throw error;
       
-      let message = 'Photo définie comme miniature du jour';
-      if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
-        message += ' et position mise à jour';
-        if (selectedPhoto.location_name) {
-          message += ' avec nouveau lieu';
-        }
-      }
-      
-      toast.success(message);
+      toast.success('Photo définie comme miniature du jour');
       fetchData(); // Refresh data
     } catch (error) {
       console.error('Erreur lors de la définition de la miniature:', error);
@@ -275,10 +255,10 @@ export default function DayView() {
               </Button>
               <div>
                 <h1 className="text-xl font-bold">
-                  {album.title} - {dayEntry && calculateDayTitle(dayEntry, dayNumber)}
+                  {album.title} - {dayEntry && calculateDayTitle({ ...dayEntry, cover_photo: coverPhoto }, dayNumber)}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {dayEntry.location_name ? `${dayEntry.location_name} - ` : ''}{new Date(dayEntry.date).toLocaleDateString('fr-FR')} - {photos.length} photo{photos.length !== 1 ? 's' : ''}
+                  {coverPhoto?.location_name ? `${coverPhoto.location_name} - ` : ''}{new Date(dayEntry.date).toLocaleDateString('fr-FR')} - {photos.length} photo{photos.length !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>

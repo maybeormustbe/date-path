@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ArrowLeft, Plus, Camera, Edit2, Check, X, Play, Printer, Binoculars, Settings, MapPin, Type, Palette } from 'lucide-react';
 import { addDays, format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
+import { calculateDayTitles } from '@/utils/dayTitleFormatter';
 
 interface Album {
   id: string;
@@ -30,6 +31,7 @@ interface DayEntry {
   longitude: number | null;
   cover_photo_id: string | null;
   photo_count: number;
+  calculatedTitle: string;
   cover_photo?: {
     thumbnail_path: string;
     file_path: string;
@@ -47,10 +49,7 @@ export default function AlbumView() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string>();
-  const [editingDayId, setEditingDayId] = useState<string>();
-  const [editingTitle, setEditingTitle] = useState('');
   const [isUpdatingMetadata, setIsUpdatingMetadata] = useState(false);
-  const [isUpdatingTitles, setIsUpdatingTitles] = useState(false);
 
   useEffect(() => {
     if (albumId && user) {
@@ -140,7 +139,10 @@ export default function AlbumView() {
         completeDayEntries.sort((a, b) => a.date.localeCompare(b.date));
       }
       
-      setDayEntries(completeDayEntries);
+      // Calculer les titres dynamiquement
+      const dayEntriesWithCalculatedTitles = calculateDayTitles(completeDayEntries);
+      
+      setDayEntries(dayEntriesWithCalculatedTitles);
 
     } catch (error) {
       console.error('Erreur:', error);
@@ -150,38 +152,6 @@ export default function AlbumView() {
     }
   };
 
-  const startEditingTitle = (day: DayEntry, index: number) => {
-    setEditingDayId(day.id);
-    setEditingTitle(day.title || `Jour ${index + 1}`);
-  };
-
-  const saveTitle = async (dayId: string) => {
-    try {
-      const { error } = await supabase
-        .from('day_entries')
-        .update({ title: editingTitle })
-        .eq('id', dayId);
-
-      if (error) throw error;
-
-      // Update local state
-      setDayEntries(prev => prev.map(day => 
-        day.id === dayId ? { ...day, title: editingTitle } : day
-      ));
-      
-      setEditingDayId(undefined);
-      setEditingTitle('');
-      toast.success('Titre mis à jour');
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Erreur lors de la mise à jour du titre');
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditingDayId(undefined);
-    setEditingTitle('');
-  };
 
   const handleUpdateMetadata = async () => {
     setIsUpdatingMetadata(true);
@@ -212,32 +182,6 @@ export default function AlbumView() {
     }
   };
 
-  const handleUpdateTitles = async () => {
-    setIsUpdatingTitles(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('update-day-titles', {
-        body: {}
-      });
-
-      if (error) {
-        console.error('Erreur lors de la mise à jour des titres:', error);
-        toast.error('Impossible de mettre à jour les titres des journées');
-        return;
-      }
-
-      toast.success(data.message || 'Titres des journées mis à jour avec succès');
-
-      // Recharger la page pour voir les changements
-      window.location.reload();
-
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Une erreur inattendue s\'est produite');
-    } finally {
-      setIsUpdatingTitles(false);
-    }
-  };
 
   const mapLocations = dayEntries
     .filter(day => day.latitude && day.longitude && !day.id.startsWith('placeholder-'))
@@ -247,7 +191,7 @@ export default function AlbumView() {
         id: day.id,
         latitude: day.latitude!,
         longitude: day.longitude!,
-        title: day.title || `Jour ${dayIndex}`,
+        title: day.calculatedTitle,
         date: day.date,
         photoCount: day.photo_count,
         selected: day.id === selectedDayId
@@ -303,10 +247,6 @@ export default function AlbumView() {
                   <MapPin className="h-4 w-4 mr-2" />
                   Mettre à jour les lieux
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleUpdateTitles} disabled={isUpdatingTitles}>
-                  <Type className="h-4 w-4 mr-2" />
-                  Mettre à jour les titres
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPrintSettingsOpen(true)}>
                   <Palette className="h-4 w-4 mr-2" />
                   Paramètres d'impression
@@ -355,7 +295,7 @@ export default function AlbumView() {
                       className={`group cursor-pointer transition-all hover:shadow-medium ${
                         selectedDayId === day.id ? 'ring-2 ring-primary shadow-medium' : ''
                       } ${day.id.startsWith('placeholder-') ? 'opacity-60' : ''}`}
-                      onClick={() => !day.id.startsWith('placeholder-') && editingDayId !== day.id && setSelectedDayId(day.id)}
+                      onClick={() => !day.id.startsWith('placeholder-') && setSelectedDayId(day.id)}
                     >
                       <CardContent className="p-3">
                         <div className="flex gap-3">
@@ -377,10 +317,10 @@ export default function AlbumView() {
                           
                           {/* Contenu texte */}
                           <div className="flex-1 min-w-0">
-                             <div className="flex items-center justify-between mb-1">
-                               <h4 className="font-medium text-sm">
-                                 {day.title || `Jour ${index + 1}`}
-                               </h4>
+                              <div className="flex items-center justify-between mb-1">
+                                <h4 className="font-medium text-sm">
+                                  {day.calculatedTitle}
+                                </h4>
                                 {!day.id.startsWith('placeholder-') && (
                                   <Button
                                     size="sm"

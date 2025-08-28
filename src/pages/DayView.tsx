@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, MapPin, Save, Star, Binoculars } from 'lucide-react';
 import { toast } from 'sonner';
+import { calculateDayTitle } from '@/utils/dayTitleFormatter';
 
 interface Album {
   id: string;
@@ -56,6 +57,7 @@ export default function DayView() {
   const [modalPhoto, setModalPhoto] = useState<Photo | null>(null);
   const [editingPhotoId, setEditingPhotoId] = useState<string>();
   const [editingPhotoTitle, setEditingPhotoTitle] = useState('');
+  const [dayNumber, setDayNumber] = useState<number>(1);
 
   useEffect(() => {
     if (albumId && dayId && user) {
@@ -85,6 +87,18 @@ export default function DayView() {
       if (dayError) throw dayError;
       setDayEntry(dayData);
       setDayDescription(dayData.description || '');
+
+      // Calculer le numéro de jour dans l'album
+      const { data: allDaysData, error: allDaysError } = await supabase
+        .from('day_entries')
+        .select('date')
+        .eq('album_id', albumId)
+        .order('date');
+
+      if (!allDaysError && allDaysData) {
+        const dayIndex = allDaysData.findIndex(d => d.date === dayData.date);
+        setDayNumber(dayIndex + 1);
+      }
 
       // Fetch photos for this day
       const { data: photosData, error: photosError } = await supabase
@@ -138,20 +152,9 @@ export default function DayView() {
         updateData.latitude = selectedPhoto.latitude;
         updateData.longitude = selectedPhoto.longitude;
         
-        // If the photo has a location name, also update it and generate new title
+        // If the photo has a location name, also update it
         if (selectedPhoto.location_name) {
           updateData.location_name = selectedPhoto.location_name;
-          
-          // Generate a new title based on the date and location
-          if (dayEntry?.date) {
-            const date = new Date(dayEntry.date);
-            const dayNumber = Math.floor((date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-            const weekDay = date.toLocaleDateString('fr-FR', { weekday: 'long' });
-            const dayOfMonth = date.getDate();
-            const month = date.toLocaleDateString('fr-FR', { month: 'long' });
-            
-            updateData.title = `J${dayNumber}, ${weekDay} ${dayOfMonth} ${month}, ${selectedPhoto.location_name}`;
-          }
         }
       }
 
@@ -166,7 +169,7 @@ export default function DayView() {
       if (selectedPhoto?.latitude && selectedPhoto?.longitude) {
         message += ' et position mise à jour';
         if (selectedPhoto.location_name) {
-          message += ' avec nouveau titre';
+          message += ' avec nouveau lieu';
         }
       }
       
@@ -272,7 +275,7 @@ export default function DayView() {
               </Button>
               <div>
                 <h1 className="text-xl font-bold">
-                  {album.title} - {dayEntry.title || 'Sans titre'}
+                  {album.title} - {dayEntry && calculateDayTitle(dayEntry, dayNumber)}
                 </h1>
                 <p className="text-sm text-muted-foreground">
                   {dayEntry.location_name ? `${dayEntry.location_name} - ` : ''}{new Date(dayEntry.date).toLocaleDateString('fr-FR')} - {photos.length} photo{photos.length !== 1 ? 's' : ''}
@@ -468,7 +471,7 @@ export default function DayView() {
         onClose={() => setModalPhoto(null)}
         photo={modalPhoto}
         albumTitle={album?.title || ''}
-        dayTitle={dayEntry?.title || `Jour du ${dayEntry?.date}`}
+        dayTitle={dayEntry && calculateDayTitle(dayEntry, dayNumber)}
         photos={photos}
         onNavigate={(photoId) => {
           const photo = photos.find(p => p.id === photoId);

@@ -182,13 +182,14 @@ export type Database = {
         Returns: {
           cover_photo_file_path: string
           cover_photo_id: string
+          cover_photo_latitude: number
+          cover_photo_location_name: string
+          cover_photo_longitude: number
           cover_photo_thumbnail_path: string
           cover_photo_title: string
           date: string
           id: string
-          latitude: number
           location_name: string
-          longitude: number
           photo_count: number
           title: string
         }[]

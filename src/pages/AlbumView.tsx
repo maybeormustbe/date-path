@@ -49,7 +49,7 @@ export default function AlbumView() {
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [printSettingsOpen, setPrintSettingsOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string>();
-  const [isUpdatingMetadata, setIsUpdatingMetadata] = useState(false);
+  
 
   useEffect(() => {
     if (albumId && user) {
@@ -150,34 +150,6 @@ export default function AlbumView() {
   };
 
 
-  const handleUpdateMetadata = async () => {
-    setIsUpdatingMetadata(true);
-    
-    try {
-      const { data, error } = await supabase.functions.invoke('update-album-metadata', {
-        body: { albumId }
-      });
-
-      if (error) {
-        console.error('Erreur lors de la mise à jour des métadonnées:', error);
-        toast.error('Impossible de mettre à jour les métadonnées de l\'album');
-        return;
-      }
-
-      toast.success(`${data.photosUpdated} photos et ${data.dayEntriesUpdated} journées mises à jour`);
-
-      // Recharger la page pour voir les changements
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-
-    } catch (error) {
-      console.error('Erreur:', error);
-      toast.error('Une erreur inattendue s\'est produite');
-    } finally {
-      setIsUpdatingMetadata(false);
-    }
-  };
 
 
   const mapLocations = dayEntries
@@ -240,10 +212,6 @@ export default function AlbumView() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 z-[9999] bg-background">
-                <DropdownMenuItem onClick={handleUpdateMetadata} disabled={isUpdatingMetadata}>
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Mettre à jour les lieux
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setPrintSettingsOpen(true)}>
                   <Palette className="h-4 w-4 mr-2" />
                   Paramètres d'impression

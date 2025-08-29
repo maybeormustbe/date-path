@@ -334,7 +334,6 @@ export default function AlbumView() {
                             </div>
                             <div className="text-xs text-muted-foreground space-y-0.5">
                               <p>{day.date}</p>
-                              {day.cover_photo?.location_name && <p>{day.cover_photo.location_name}</p>}
                               <p>{day.photo_count} photo{day.photo_count !== 1 ? 's' : ''}</p>
                             </div>
                           </div>

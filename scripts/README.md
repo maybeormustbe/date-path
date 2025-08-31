@@ -2,7 +2,76 @@
 
 Ce dossier contient les scripts pour migrer des données entre instances Supabase ou vers Firebase.
 
-## 🔄 Migration Supabase vers Supabase
+## 🚀 Migration Supabase Complète (NOUVEAU) 
+
+### Démarrage rapide avec le script complet
+
+```bash
+cd scripts
+chmod +x run-complete-migration.sh
+./run-complete-migration.sh
+```
+
+**🎯 Fonctionnalités disponibles :**
+- 🏗️ **Créer la structure** : Tables, index, RLS, fonctions, triggers, buckets
+- 📦 **Migrer les données** : Export + import avec suivi détaillé  
+- 📤 **Export uniquement** : Sauvegarde des données
+- 📥 **Import uniquement** : Restauration des données
+- 🔄 **Migration complète** : Structure + données en une fois
+
+### 📊 Messages de statut détaillés
+
+Le script fournit des informations très précises :
+- ✅ Progression étape par étape avec numérotation [1/8], [2/8]...
+- 📋 Statut de chaque table, index, politique RLS  
+- 📈 Compteurs en temps réel pendant l'export/import
+- 🎯 Messages d'erreur explicites avec solutions
+- 🔍 Statistiques complètes à la fin
+
+### Configuration étendue
+Utilisez `config-example.json` comme modèle et renommez en `config.json` :
+```json
+{
+  "source": {
+    "url": "https://your-source-project.supabase.co",
+    "anon_key": "your-source-anon-key", 
+    "service_role_key": "your-source-service-role-key"
+  },
+  "destination": {
+    "url": "https://your-destination-project.supabase.co",
+    "anon_key": "your-destination-anon-key",
+    "service_role_key": "your-destination-service-role-key"
+  },
+  "tables": ["albums", "day_entries", "photos"],
+  "storage_buckets": ["photos", "thumbnails"],
+  "export_users": true,
+  "create_structure": {
+    "tables": true,
+    "indexes": true, 
+    "rls": true,
+    "functions": true,
+    "triggers": true,
+    "storage_buckets": true
+  }
+}
+```
+
+### Commandes manuelles (script complet)
+```bash
+# Créer uniquement la structure 
+node supabase-migration.js structure
+
+# Migration complète (export + import)
+node supabase-migration.js migrate
+
+# Export uniquement
+node supabase-migration.js export
+
+# Import uniquement
+node supabase-migration.js import
+```
+
+## 🔄 Migration Supabase vers Supabase (Version simple)
 
 ### Démarrage rapide
 ```bash
